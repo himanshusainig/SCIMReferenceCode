@@ -155,7 +155,20 @@
                         "deleteGroupTestEnabled": "@or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Delete_Group_Test'))",
                         "addMemberTestEnabled": "@or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests')), equals(parameters('EnabledTests'), 'Group_Update_Add_Member_Test'))",
                         "removeMemberTestEnabled": "@or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests')), equals(parameters('EnabledTests'), 'Group_Update_Remove_Member_Test'))"
-                    }
+                    },
+                    "testResults": {
+                        "createUserTestResult": "@if(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Create_User_Test')), variables('CreateUserTestOutputs')['overallResult'], 'SKIPPED')",
+                        "updateUserTestResult": "@if(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Update_User_Test')), variables('UpdateUserTestOutputs')['overallResult'], 'SKIPPED')",
+                        "disableUserTestResult": "@if(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Disable_User_Test')), variables('DisableUserTestOutputs')['overallResult'], 'SKIPPED')",
+                        "deleteUserTestResult": "@if(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Delete_User_Test')), variables('DeleteUserTestOutputs')['overallResult'], 'SKIPPED')",
+                        "managerTestResult": "@if(or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests')), equals(parameters('EnabledTests'), 'User_Update_Manager_Test')), variables('ManagerTestOutputs')['overallResult'], 'SKIPPED')",
+                        "createGroupTestResult": "@if(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Create_Group_Test')), variables('CreateGroupTestOutputs')['overallResult'], 'SKIPPED')",
+                        "updateGroupTestResult": "@if(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Update_Group_Test')), variables('UpdateGroupTestOutputs')['overallResult'], 'SKIPPED')",
+                        "deleteGroupTestResult": "@if(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Delete_Group_Test')), variables('DeleteGroupTestOutputs')['overallResult'], 'SKIPPED')",
+                        "addMemberTestResult": "@if(or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests')), equals(parameters('EnabledTests'), 'Group_Update_Add_Member_Test')), variables('AddMemberTestOutputs')['overallResult'], 'SKIPPED')",
+                        "removeMemberTestResult": "@if(or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests')), equals(parameters('EnabledTests'), 'Group_Update_Remove_Member_Test')), variables('RemoveMemberTestOutputs')['overallResult'], 'SKIPPED')"
+                    },
+                    "overallLogicAppResult": "@if(or(or(or(or(or(or(or(or(or(and(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Create_User_Test')), equals(variables('CreateUserTestOutputs')['overallResult'], 'FAILED')), and(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Update_User_Test')), equals(variables('UpdateUserTestOutputs')['overallResult'], 'FAILED'))), and(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Disable_User_Test')), equals(variables('DisableUserTestOutputs')['overallResult'], 'FAILED'))), and(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Delete_User_Test')), equals(variables('DeleteUserTestOutputs')['overallResult'], 'FAILED'))), and(or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests')), equals(parameters('EnabledTests'), 'User_Update_Manager_Test')), equals(variables('ManagerTestOutputs')['overallResult'], 'FAILED'))), and(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Create_Group_Test')), equals(variables('CreateGroupTestOutputs')['overallResult'], 'FAILED'))), and(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Update_Group_Test')), equals(variables('UpdateGroupTestOutputs')['overallResult'], 'FAILED'))), and(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Delete_Group_Test')), equals(variables('DeleteGroupTestOutputs')['overallResult'], 'FAILED'))), and(or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests')), equals(parameters('EnabledTests'), 'Group_Update_Add_Member_Test')), equals(variables('AddMemberTestOutputs')['overallResult'], 'FAILED'))), and(or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests')), equals(parameters('EnabledTests'), 'Group_Update_Remove_Member_Test')), equals(variables('RemoveMemberTestOutputs')['overallResult'], 'FAILED'))), 'Failed', 'Succeeded')"
                 }
             },
             "Compose_Final_Results": {
@@ -166,6 +179,17 @@
                 },
                 "type": "Compose",
                 "inputs": "@union(if(outputs('Evaluate_Test_Results')?['enabledTestsEvaluation']?['createUserTestEnabled'], if(equals(variables('CreateUserTestOutputs')['overallResult'], 'PASSED'), json(concat('[{\"testName\":\"Create_User_Test\",\"testResult\":\"', variables('CreateUserTestOutputs')['result'], '\",\"provisioningErrorDetails\":null,\"recommendationUrl\":\"\"}]')), json(concat('[{\"testName\":\"Create_User_Test\",\"testResult\":\"', variables('CreateUserTestOutputs')['result'], '\",\"provisioningErrorDetails\":', string(variables('CreateUserTestOutputs')['errorDetails']), ',\"recommendationUrl\":\"https://learn.microsoft.com/en-us/azure/active-directory/app-provisioning/known-issues\"}]'))), json('[{\"testName\":\"Create_User_Test\",\"testResult\":\"SKIPPED\",\"provisioningErrorDetails\":\"\",\"recommendationUrl\":\"\"}]')), if(outputs('Evaluate_Test_Results')?['enabledTestsEvaluation']?['updateUserTestEnabled'], if(equals(variables('UpdateUserTestOutputs')['overallResult'], 'PASSED'), json(concat('[{\"testName\":\"Update_User_Test\",\"testResult\":\"', variables('UpdateUserTestOutputs')['result'], '\",\"provisioningErrorDetails\":null,\"recommendationUrl\":\"\"}]')), json(concat('[{\"testName\":\"Update_User_Test\",\"testResult\":\"', variables('UpdateUserTestOutputs')['result'], '\",\"provisioningErrorDetails\":', string(variables('UpdateUserTestOutputs')['errorDetails']), ',\"recommendationUrl\":\"https://learn.microsoft.com/en-us/azure/active-directory/app-provisioning/known-issues\"}]'))), json('[{\"testName\":\"Update_User_Test\",\"testResult\":\"SKIPPED\",\"provisioningErrorDetails\":\"\",\"recommendationUrl\":\"\"}]')), if(outputs('Evaluate_Test_Results')?['enabledTestsEvaluation']?['disableUserTestEnabled'], if(equals(variables('DisableUserTestOutputs')['overallResult'], 'PASSED'), json(concat('[{\"testName\":\"Disable_User_Test\",\"testResult\":\"', variables('DisableUserTestOutputs')['result'], '\",\"provisioningErrorDetails\":null,\"recommendationUrl\":\"\"}]')), json(concat('[{\"testName\":\"Disable_User_Test\",\"testResult\":\"', variables('DisableUserTestOutputs')['result'], '\",\"provisioningErrorDetails\":', string(variables('DisableUserTestOutputs')['errorDetails']), ',\"recommendationUrl\":\"https://learn.microsoft.com/en-us/azure/active-directory/app-provisioning/known-issues\"}]'))), json('[{\"testName\":\"Disable_User_Test\",\"testResult\":\"SKIPPED\",\"provisioningErrorDetails\":\"\",\"recommendationUrl\":\"\"}]')), if(outputs('Evaluate_Test_Results')?['enabledTestsEvaluation']?['deleteUserTestEnabled'], if(equals(variables('DeleteUserTestOutputs')['overallResult'], 'PASSED'), json(concat('[{\"testName\":\"Delete_User_Test\",\"testResult\":\"', variables('DeleteUserTestOutputs')['result'], '\",\"provisioningErrorDetails\":null,\"recommendationUrl\":\"\"}]')), json(concat('[{\"testName\":\"Delete_User_Test\",\"testResult\":\"', variables('DeleteUserTestOutputs')['result'], '\",\"provisioningErrorDetails\":', string(variables('DeleteUserTestOutputs')['errorDetails']), ',\"recommendationUrl\":\"https://learn.microsoft.com/en-us/azure/active-directory/app-provisioning/known-issues\"}]'))), json('[{\"testName\":\"Delete_User_Test\",\"testResult\":\"SKIPPED\",\"provisioningErrorDetails\":\"\",\"recommendationUrl\":\"\"}]')), if(outputs('Evaluate_Test_Results')?['enabledTestsEvaluation']?['managerTestEnabled'], if(equals(variables('ManagerTestOutputs')['overallResult'], 'PASSED'), json(concat('[{\"testName\":\"User_Update_Manager_Test\",\"testResult\":\"', variables('ManagerTestOutputs')['result'], '\",\"provisioningErrorDetails\":null,\"recommendationUrl\":\"\"}]')), json(concat('[{\"testName\":\"User_Update_Manager_Test\",\"testResult\":\"', variables('ManagerTestOutputs')['result'], '\",\"provisioningErrorDetails\":', string(variables('ManagerTestOutputs')['errorDetails']), ',\"recommendationUrl\":\"https://learn.microsoft.com/en-us/azure/active-directory/app-provisioning/known-issues\"}]'))), json('[{\"testName\":\"User_Update_Manager_Test\",\"testResult\":\"SKIPPED\",\"provisioningErrorDetails\":\"\",\"recommendationUrl\":\"\"}]')), if(outputs('Evaluate_Test_Results')?['enabledTestsEvaluation']?['createGroupTestEnabled'], if(equals(variables('CreateGroupTestOutputs')['overallResult'], 'PASSED'), json(concat('[{\"testName\":\"Create_Group_Test\",\"testResult\":\"', variables('CreateGroupTestOutputs')['result'], '\",\"provisioningErrorDetails\":null,\"recommendationUrl\":\"\"}]')), json(concat('[{\"testName\":\"Create_Group_Test\",\"testResult\":\"', variables('CreateGroupTestOutputs')['result'], '\",\"provisioningErrorDetails\":', string(variables('CreateGroupTestOutputs')['errorDetails']), ',\"recommendationUrl\":\"https://learn.microsoft.com/en-us/azure/active-directory/app-provisioning/known-issues\"}]'))), json('[{\"testName\":\"Create_Group_Test\",\"testResult\":\"SKIPPED\",\"provisioningErrorDetails\":\"\",\"recommendationUrl\":\"\"}]')), if(outputs('Evaluate_Test_Results')?['enabledTestsEvaluation']?['updateGroupTestEnabled'], if(equals(variables('UpdateGroupTestOutputs')['overallResult'], 'PASSED'), json(concat('[{\"testName\":\"Update_Group_Test\",\"testResult\":\"', variables('UpdateGroupTestOutputs')['result'], '\",\"provisioningErrorDetails\":null,\"recommendationUrl\":\"\"}]')), json(concat('[{\"testName\":\"Update_Group_Test\",\"testResult\":\"', variables('UpdateGroupTestOutputs')['result'], '\",\"provisioningErrorDetails\":', string(variables('UpdateGroupTestOutputs')['errorDetails']), ',\"recommendationUrl\":\"https://learn.microsoft.com/en-us/azure/active-directory/app-provisioning/known-issues\"}]'))), json('[{\"testName\":\"Update_Group_Test\",\"testResult\":\"SKIPPED\",\"provisioningErrorDetails\":\"\",\"recommendationUrl\":\"\"}]')), if(outputs('Evaluate_Test_Results')?['enabledTestsEvaluation']?['deleteGroupTestEnabled'], if(equals(variables('DeleteGroupTestOutputs')['overallResult'], 'PASSED'), json(concat('[{\"testName\":\"Delete_Group_Test\",\"testResult\":\"', variables('DeleteGroupTestOutputs')['result'], '\",\"provisioningErrorDetails\":null,\"recommendationUrl\":\"\"}]')), json(concat('[{\"testName\":\"Delete_Group_Test\",\"testResult\":\"', variables('DeleteGroupTestOutputs')['result'], '\",\"provisioningErrorDetails\":', string(variables('DeleteGroupTestOutputs')['errorDetails']), ',\"recommendationUrl\":\"https://learn.microsoft.com/en-us/azure/active-directory/app-provisioning/known-issues\"}]'))), json('[{\"testName\":\"Delete_Group_Test\",\"testResult\":\"SKIPPED\",\"provisioningErrorDetails\":\"\",\"recommendationUrl\":\"\"}]')), if(outputs('Evaluate_Test_Results')?['enabledTestsEvaluation']?['addMemberTestEnabled'], if(equals(variables('AddMemberTestOutputs')['overallResult'], 'PASSED'), json(concat('[{\"testName\":\"Group_Update_Add_Member_Test\",\"testResult\":\"', variables('AddMemberTestOutputs')['result'], '\",\"provisioningErrorDetails\":null,\"recommendationUrl\":\"\"}]')), json(concat('[{\"testName\":\"Group_Update_Add_Member_Test\",\"testResult\":\"', variables('AddMemberTestOutputs')['result'], '\",\"provisioningErrorDetails\":', string(variables('AddMemberTestOutputs')['errorDetails']), ',\"recommendationUrl\":\"https://learn.microsoft.com/en-us/azure/active-directory/app-provisioning/known-issues\"}]'))), json('[{\"testName\":\"Group_Update_Add_Member_Test\",\"testResult\":\"SKIPPED\",\"provisioningErrorDetails\":\"\",\"recommendationUrl\":\"\"}]')), if(outputs('Evaluate_Test_Results')?['enabledTestsEvaluation']?['removeMemberTestEnabled'], if(equals(variables('RemoveMemberTestOutputs')['overallResult'], 'PASSED'), json(concat('[{\"testName\":\"Group_Update_Remove_Member_Test\",\"testResult\":\"', variables('RemoveMemberTestOutputs')['result'], '\",\"provisioningErrorDetails\":null,\"recommendationUrl\":\"\"}]')), json(concat('[{\"testName\":\"Group_Update_Remove_Member_Test\",\"testResult\":\"', variables('RemoveMemberTestOutputs')['result'], '\",\"provisioningErrorDetails\":', string(variables('RemoveMemberTestOutputs')['errorDetails']), ',\"recommendationUrl\":\"https://learn.microsoft.com/en-us/azure/active-directory/app-provisioning/known-issues\"}]'))), json('[{\"testName\":\"Group_Update_Remove_Member_Test\",\"testResult\":\"SKIPPED\",\"provisioningErrorDetails\":\"\",\"recommendationUrl\":\"\"}]')))"
+            },
+            "Terminate_With_Test_Status": {
+                "runAfter": {
+                    "Compose_Final_Results": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Terminate",
+                "inputs": {
+                    "runStatus": "@outputs('Evaluate_Test_Results')?['overallLogicAppResult']"
+                }
             },
             "UserTests_Scope": {
                 "actions": {
@@ -342,7 +366,7 @@
                                         "expression": "@greater(length(coalesce(body('Verify_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                         "limit": {
                                             "count": 150,
-                                            "timeout": "PT15M"
+                                            "timeout": "PT40M"
                                         },
                                         "type": "Until"
                                     }
@@ -444,7 +468,7 @@
                                     "provisioningLogsCount": "@length(coalesce(body('Verify_Provisioning_Logs')?['value'], json('[]')))",
                                     "hasProvisioningLogs": "@greater(length(coalesce(body('Verify_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                     "provisioningStatus": "@if(greater(length(coalesce(body('Verify_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Verify_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND')",
-                                    "provisioningResult": "@if(equals(variables('CreateUserScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Verify_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Verify_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND'), concat('Failed Action: ', variables('CreateUserFailedActionName')))",
+                                    "provisioningResult": "@if(equals(variables('CreateUserScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Verify_Provisioning_Logs')?['value'], json('[]'))), 0), if(equals(toLower(coalesce(first(body('Verify_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), 'success', concat('Verify_Provisioning_Logs: ', coalesce(first(body('Verify_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'))), 'Verify_Provisioning_Logs: NO_LOGS_FOUND'), concat('Failed Action: ', variables('CreateUserFailedActionName')))",
                                     "provisioningErrorDetails": "@if(equals(variables('CreateUserScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Verify_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(first(body('Verify_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status']), 'failure')), first(body('Verify_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null), variables('CreateUserFailedActionResponse'))",
                                     "overallResult": "@if(equals(variables('CreateUserScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Verify_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('Verify_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), 'PASSED', 'FAILED'), 'FAILED')"
                                 }
@@ -660,7 +684,7 @@
                                                 "expression": "@greater(length(coalesce(body('Update_Verify_Create_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                                 "limit": {
                                                     "count": 150,
-                                                    "timeout": "PT15M"
+                                                    "timeout": "PT40M"
                                                 },
                                                 "type": "Until"
                                             },
@@ -737,7 +761,7 @@
                                             "provisioningLogsCount": "@length(coalesce(body('Update_Verify_Create_Provisioning_Logs')?['value'], json('[]')))",
                                             "hasProvisioningLogs": "@greater(length(coalesce(body('Update_Verify_Create_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                             "provisioningStatus": "@if(greater(length(coalesce(body('Update_Verify_Create_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Update_Verify_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND')",
-                                            "provisioningResult": "@if(equals(variables('UpdateUserScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Update_Verify_Create_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Update_Verify_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND'), concat('Failed Action: ', variables('UpdateUserFailedActionName')))",
+                                            "provisioningResult": "@if(equals(variables('UpdateUserScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Update_Verify_Create_Provisioning_Logs')?['value'], json('[]'))), 0), if(equals(toLower(coalesce(first(body('Update_Verify_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), 'success', concat('Update_Verify_Create_Provisioning_Logs: ', coalesce(first(body('Update_Verify_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'))), 'Update_Verify_Create_Provisioning_Logs: NO_LOGS_FOUND'), concat('Failed Action: ', variables('UpdateUserFailedActionName')))",
                                             "provisioningErrorDetails": "@if(equals(variables('UpdateUserScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Update_Verify_Create_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(first(body('Update_Verify_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status']), 'failure')), first(body('Update_Verify_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null), variables('UpdateUserFailedActionResponse'))",
                                             "overallResult": "@if(equals(variables('UpdateUserScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Update_Verify_Create_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('Update_Verify_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), 'PASSED', 'FAILED'), 'FAILED')"
                                         }
@@ -817,7 +841,7 @@
                                                                 "Succeeded"
                                                             ]
                                                         },
-                                                        "expression": "@and(greater(length(coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'], json('[]'))), 0), contains(string(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')), string(coalesce(outputs('Compose_Final_Update_User_Body')['givenName'], ''))))",
+                                                        "expression": "@and(greater(length(coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'], json('[]'))), 0), equals(coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['name']?['givenName'], ''), coalesce(outputs('Compose_Final_Update_User_Body')?['givenName'], '')))",
                                                         "limit": {
                                                             "count": 150,
                                                             "timeout": "PT40M"
@@ -929,7 +953,7 @@
                                                         "expression": "@greater(length(coalesce(body('Update_Verify_Update_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                                         "limit": {
                                                             "count": 150,
-                                                            "timeout": "PT15M"
+                                                            "timeout": "PT40M"
                                                         },
                                                         "type": "Until"
                                                     },
@@ -1052,7 +1076,7 @@
                                                             "name": "UpdateUserTestOutputs",
                                                             "value": {
                                                                 "overallResult": "@outputs('Update_Analyze_Update_Provisioning_Results')?['overallResult']",
-                                                                "result": "@outputs('Update_Analyze_Update_Provisioning_Results')?['provisioningResult']",
+                                                                "result": "@if(equals(outputs('Update_Analyze_Update_Provisioning_Results')?['overallResult'], 'FAILED'), concat('Update Phase: ', outputs('Update_Analyze_Update_Provisioning_Results')?['provisioningResult']), outputs('Update_Analyze_Update_Provisioning_Results')?['provisioningResult'])",
                                                                 "errorDetails": "@outputs('Update_Analyze_Update_Provisioning_Results')?['provisioningErrorDetails']"
                                                             }
                                                         }
@@ -1087,7 +1111,7 @@
                                                     "provisioningLogsCount": "@length(coalesce(body('Update_Verify_Update_Provisioning_Logs')?['value'], json('[]')))",
                                                     "hasProvisioningLogs": "@greater(length(coalesce(body('Update_Verify_Update_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                                     "provisioningStatus": "@if(greater(length(coalesce(body('Update_Verify_Update_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Update_Verify_Update_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND')",
-                                                    "provisioningResult": "@if(equals(variables('UpdateUserScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Update_Verify_Update_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Update_Verify_Update_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND'), concat('Failed Action: ', variables('UpdateUserFailedActionName')))",
+                                                    "provisioningResult": "@if(equals(variables('UpdateUserScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Update_Verify_Update_Provisioning_Logs')?['value'], json('[]'))), 0), if(equals(toLower(coalesce(first(body('Update_Verify_Update_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), 'success', concat('Update_Verify_Update_Provisioning_Logs: ', coalesce(first(body('Update_Verify_Update_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'))), 'Update_Verify_Update_Provisioning_Logs: NO_LOGS_FOUND'), concat('Failed Action: ', variables('UpdateUserFailedActionName')))",
                                                     "provisioningErrorDetails": "@if(equals(variables('UpdateUserScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Update_Verify_Update_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(first(body('Update_Verify_Update_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status']), 'failure')), first(body('Update_Verify_Update_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null), variables('UpdateUserFailedActionResponse'))",
                                                     "overallResult": "@if(equals(variables('UpdateUserScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Update_Verify_Update_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('Update_Verify_Update_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), 'PASSED', 'FAILED'), 'FAILED')"
                                                 }
@@ -1216,7 +1240,7 @@
                                                     "name": "UpdateUserTestOutputs",
                                                     "value": {
                                                         "overallResult": "@outputs('Update_User_Analyze_Create_Provisioning_Results')?['overallResult']",
-                                                        "result": "@outputs('Update_User_Analyze_Create_Provisioning_Results')?['provisioningResult']",
+                                                        "result": "@if(equals(outputs('Update_User_Analyze_Create_Provisioning_Results')?['overallResult'], 'FAILED'), concat('Create Phase: ', outputs('Update_User_Analyze_Create_Provisioning_Results')?['provisioningResult']), outputs('Update_User_Analyze_Create_Provisioning_Results')?['provisioningResult'])",
                                                         "errorDetails": "@outputs('Update_User_Analyze_Create_Provisioning_Results')?['provisioningErrorDetails']"
                                                     }
                                                 }
@@ -1436,7 +1460,7 @@
                                                 "expression": "@greater(length(coalesce(body('DeleteUser_Verify_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                                 "limit": {
                                                     "count": 150,
-                                                    "timeout": "PT15M"
+                                                    "timeout": "PT40M"
                                                 },
                                                 "type": "Until"
                                             }
@@ -1538,7 +1562,7 @@
                                             "provisioningLogsCount": "@length(coalesce(body('DeleteUser_Verify_Provisioning_Logs')?['value'], json('[]')))",
                                             "hasProvisioningLogs": "@greater(length(coalesce(body('DeleteUser_Verify_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                             "provisioningStatus": "@if(greater(length(coalesce(body('DeleteUser_Verify_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('DeleteUser_Verify_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND')",
-                                            "provisioningResult": "@if(equals(variables('DeleteUserScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('DeleteUser_Verify_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('DeleteUser_Verify_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND'), concat('Failed Action: ', variables('DeleteUserFailedActionName')))",
+                                            "provisioningResult": "@if(equals(variables('DeleteUserScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('DeleteUser_Verify_Provisioning_Logs')?['value'], json('[]'))), 0), if(equals(toLower(coalesce(first(body('DeleteUser_Verify_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), 'success', concat('DeleteUser_Verify_Provisioning_Logs: ', coalesce(first(body('DeleteUser_Verify_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'))), 'DeleteUser_Verify_Provisioning_Logs: NO_LOGS_FOUND'), concat('Failed Action: ', variables('DeleteUserFailedActionName')))",
                                             "provisioningErrorDetails": "@if(equals(variables('DeleteUserScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('DeleteUser_Verify_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(first(body('DeleteUser_Verify_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status']), 'failure')), first(body('DeleteUser_Verify_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null), variables('DeleteUserFailedActionResponse'))",
                                             "overallResult": "@if(equals(variables('DeleteUserScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('DeleteUser_Verify_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('DeleteUser_Verify_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), 'PASSED', 'FAILED'), 'FAILED')"
                                         }
@@ -1551,7 +1575,7 @@
                                                     "name": "DeleteUserTestOutputs",
                                                     "value": {
                                                         "overallResult": "@outputs('DeleteUser_Analyze_Phase1_Provisioning_Results')?['overallResult']",
-                                                        "result": "@outputs('DeleteUser_Analyze_Phase1_Provisioning_Results')?['provisioningResult']",
+                                                        "result": "@if(equals(outputs('DeleteUser_Analyze_Phase1_Provisioning_Results')?['overallResult'], 'FAILED'), concat('Create Phase: ', outputs('DeleteUser_Analyze_Phase1_Provisioning_Results')?['provisioningResult']), outputs('DeleteUser_Analyze_Phase1_Provisioning_Results')?['provisioningResult'])",
                                                         "errorDetails": "@outputs('DeleteUser_Analyze_Phase1_Provisioning_Results')?['provisioningErrorDetails']"
                                                     }
                                                 }
@@ -1680,7 +1704,7 @@
                                                         "expression": "@greater(length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                                         "limit": {
                                                             "count": 150,
-                                                            "timeout": "PT15M"
+                                                            "timeout": "PT40M"
                                                         },
                                                         "type": "Until"
                                                     }
@@ -1782,7 +1806,7 @@
                                                     "provisioningLogsCount": "@length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]')))",
                                                     "hasProvisioningLogs": "@greater(length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                                     "provisioningStatus": "@if(greater(length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND')",
-                                                    "provisioningResult": "@if(equals(variables('DeleteUserScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND'), concat('Failed Action: ', variables('DeleteUserFailedActionName')))",
+                                                    "provisioningResult": "@if(equals(variables('DeleteUserScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0), if(equals(toLower(coalesce(first(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), 'success', concat('DeleteUser_Verify_Delete_Provisioning_Logs: ', coalesce(first(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'))), 'DeleteUser_Verify_Delete_Provisioning_Logs: NO_LOGS_FOUND'), concat('Failed Action: ', variables('DeleteUserFailedActionName')))",
                                                     "provisioningErrorDetails": "@if(equals(variables('DeleteUserScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(first(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status']), 'failure')), first(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null), variables('DeleteUserFailedActionResponse'))",
                                                     "overallResult": "@if(equals(variables('DeleteUserScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), 'PASSED', 'FAILED'), 'FAILED')"
                                                 }
@@ -1795,7 +1819,7 @@
                                                             "name": "DeleteUserTestOutputs",
                                                             "value": {
                                                                 "overallResult": "@outputs('DeleteUser_Analyze_Phase2_Provisioning_Results')?['overallResult']",
-                                                                "result": "@outputs('DeleteUser_Analyze_Phase2_Provisioning_Results')?['provisioningResult']",
+                                                                "result": "@if(equals(outputs('DeleteUser_Analyze_Phase2_Provisioning_Results')?['overallResult'], 'FAILED'), concat('Delete Phase: ', outputs('DeleteUser_Analyze_Phase2_Provisioning_Results')?['provisioningResult']), outputs('DeleteUser_Analyze_Phase2_Provisioning_Results')?['provisioningResult'])",
                                                                 "errorDetails": "@outputs('DeleteUser_Analyze_Phase2_Provisioning_Results')?['provisioningErrorDetails']"
                                                             }
                                                         }
@@ -2254,7 +2278,7 @@
                                                 "expression": "@and(and(greater(length(coalesce(body('Verify_Test_User_Provisioning_Logs')?['value'], json('[]'))), 0), greater(length(coalesce(body('Verify_Initial_Manager_Provisioning_Logs')?['value'], json('[]'))), 0)), greater(length(coalesce(body('Verify_New_Manager_Provisioning_Logs')?['value'], json('[]'))), 0))",
                                                 "limit": {
                                                     "count": 150,
-                                                    "timeout": "PT15M"
+                                                    "timeout": "PT40M"
                                                 },
                                                 "type": "Until"
                                             }
@@ -2353,7 +2377,7 @@
                                         },
                                         "type": "Compose",
                                         "inputs": {
-                                            "provisioningResult": "@if(equals(variables('ManagerTestScopeExecutionStatus'), 'Succeeded'), if(and(and(greater(length(coalesce(body('Verify_Test_User_Provisioning_Logs')?['value'], json('[]'))), 0), greater(length(coalesce(body('Verify_Initial_Manager_Provisioning_Logs')?['value'], json('[]'))), 0)), greater(length(coalesce(body('Verify_New_Manager_Provisioning_Logs')?['value'], json('[]'))), 0)), 'All Users Created', 'PROVISIONING_LOGS_MISSING'), concat('Failed Action: ', variables('ManagerTestFailedActionName')))",
+                                            "provisioningResult": "@if(equals(variables('ManagerTestScopeExecutionStatus'), 'Succeeded'), if(and(and(greater(length(coalesce(body('Verify_Test_User_Provisioning_Logs')?['value'], json('[]'))), 0), greater(length(coalesce(body('Verify_Initial_Manager_Provisioning_Logs')?['value'], json('[]'))), 0)), greater(length(coalesce(body('Verify_New_Manager_Provisioning_Logs')?['value'], json('[]'))), 0)), if(and(and(equals(toLower(coalesce(first(body('Verify_Test_User_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), equals(toLower(coalesce(first(body('Verify_Initial_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), equals(toLower(coalesce(first(body('Verify_New_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), 'success', concat('Verify_Test_User_Provisioning_Logs: ', coalesce(first(body('Verify_Test_User_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), ', Verify_Initial_Manager_Provisioning_Logs: ', coalesce(first(body('Verify_Initial_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), ', Verify_New_Manager_Provisioning_Logs: ', coalesce(first(body('Verify_New_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'))), concat('Verify_Test_User_Provisioning_Logs: ', if(greater(length(coalesce(body('Verify_Test_User_Provisioning_Logs')?['value'], json('[]'))), 0), 'found', 'NO_LOGS_FOUND'), ', Verify_Initial_Manager_Provisioning_Logs: ', if(greater(length(coalesce(body('Verify_Initial_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), 'found', 'NO_LOGS_FOUND'), ', Verify_New_Manager_Provisioning_Logs: ', if(greater(length(coalesce(body('Verify_New_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), 'found', 'NO_LOGS_FOUND'))), concat('Failed Action: ', variables('ManagerTestFailedActionName')))",
                                             "provisioningErrorDetails": "@if(equals(variables('ManagerTestScopeExecutionStatus'), 'Succeeded'), if(or(or(equals(toLower(coalesce(first(body('Verify_Test_User_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'failure'), equals(toLower(coalesce(first(body('Verify_Initial_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'failure')), equals(toLower(coalesce(first(body('Verify_New_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'failure')), json(concat('{\"testUser\":', string(coalesce(first(body('Verify_Test_User_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null)), ',\"initialManager\":', string(coalesce(first(body('Verify_Initial_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null)), ',\"newManager\":', string(coalesce(first(body('Verify_New_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null)), '}')), null), variables('ManagerTestFailedActionResponse'))",
                                             "overallResult": "@if(equals(variables('ManagerTestScopeExecutionStatus'), 'Succeeded'), if(and(and(and(greater(length(coalesce(body('Verify_Test_User_Provisioning_Logs')?['value'], json('[]'))), 0), greater(length(coalesce(body('Verify_Initial_Manager_Provisioning_Logs')?['value'], json('[]'))), 0)), greater(length(coalesce(body('Verify_New_Manager_Provisioning_Logs')?['value'], json('[]'))), 0)), not(or(or(equals(toLower(coalesce(first(body('Verify_Test_User_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'failure'), equals(toLower(coalesce(first(body('Verify_Initial_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'failure')), equals(toLower(coalesce(first(body('Verify_New_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'failure')))), 'PASSED', 'FAILED'), 'FAILED')"
                                         }
@@ -2366,7 +2390,7 @@
                                                     "name": "ManagerTestOutputs",
                                                     "value": {
                                                         "overallResult": "@outputs('Analyze_Phase1_Provisioning_Results')?['overallResult']",
-                                                        "result": "@outputs('Analyze_Phase1_Provisioning_Results')?['provisioningResult']",
+                                                        "result": "@if(equals(outputs('Analyze_Phase1_Provisioning_Results')?['overallResult'], 'FAILED'), concat('Create Phase: ', outputs('Analyze_Phase1_Provisioning_Results')?['provisioningResult']), outputs('Analyze_Phase1_Provisioning_Results')?['provisioningResult'])",
                                                         "errorDetails": "@outputs('Analyze_Phase1_Provisioning_Results')?['provisioningErrorDetails']"
                                                     }
                                                 }
@@ -2541,7 +2565,7 @@
                                                         "expression": "@and(greater(length(coalesce(body('Verify_Set_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), and(or(empty(first(body('Verify_Set_Manager_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['oldValue']), equals(first(body('Verify_Set_Manager_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['oldValue'], 'null')), equals(first(body('Verify_Set_Manager_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['newValue'], body('SCIM_Query_Initial_Manager')?['id'])))",
                                                         "limit": {
                                                             "count": 150,
-                                                            "timeout": "PT15M"
+                                                            "timeout": "PT40M"
                                                         },
                                                         "type": "Until"
                                                     }
@@ -2643,7 +2667,7 @@
                                                     "setManagerProvisioningStatus": "@if(greater(length(coalesce(body('Verify_Set_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Verify_Set_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND')",
                                                     "hasProvisioningLogs": "@greater(length(coalesce(body('Verify_Set_Manager_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                                     "hasFailures": "@equals(toLower(coalesce(first(body('Verify_Set_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'failure')",
-                                                    "provisioningResult": "@if(equals(variables('ManagerTestScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Verify_Set_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Verify_Set_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND'), concat('Failed Action: ', variables('ManagerTestFailedActionName')))",
+                                                    "provisioningResult": "@if(equals(variables('ManagerTestScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Verify_Set_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), if(equals(toLower(coalesce(first(body('Verify_Set_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), 'success', concat('Verify_Set_Manager_Provisioning_Logs: ', coalesce(first(body('Verify_Set_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'))), 'Verify_Set_Manager_Provisioning_Logs: NO_LOGS_FOUND'), concat('Failed Action: ', variables('ManagerTestFailedActionName')))",
                                                     "provisioningErrorDetails": "@if(equals(variables('ManagerTestScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Verify_Set_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(first(body('Verify_Set_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status']), 'failure')), first(body('Verify_Set_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null), variables('ManagerTestFailedActionResponse'))",
                                                     "overallResult": "@if(equals(variables('ManagerTestScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Verify_Set_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('Verify_Set_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), 'PASSED', 'FAILED'), 'FAILED')"
                                                 }
@@ -2656,7 +2680,7 @@
                                                             "name": "ManagerTestOutputs",
                                                             "value": {
                                                                 "overallResult": "@outputs('Analyze_Phase2_Provisioning_Results')?['overallResult']",
-                                                                "result": "@outputs('Analyze_Phase2_Provisioning_Results')?['provisioningResult']",
+                                                                "result": "@if(equals(outputs('Analyze_Phase2_Provisioning_Results')?['overallResult'], 'FAILED'), concat('Update Initial Manager Phase: ', outputs('Analyze_Phase2_Provisioning_Results')?['provisioningResult']), outputs('Analyze_Phase2_Provisioning_Results')?['provisioningResult'])",
                                                                 "errorDetails": "@outputs('Analyze_Phase2_Provisioning_Results')?['provisioningErrorDetails']"
                                                             }
                                                         }
@@ -2774,7 +2798,7 @@
                                                                 "expression": "@and(greater(length(coalesce(body('Verify_Change_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), equals(first(body('Verify_Change_Manager_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['newValue'], body('SCIM_Query_New_Manager')?['id']))",
                                                                 "limit": {
                                                                     "count": 150,
-                                                                    "timeout": "PT15M"
+                                                                    "timeout": "PT40M"
                                                                 },
                                                                 "type": "Until"
                                                             }
@@ -2876,7 +2900,7 @@
                                                             "changeManagerProvisioningStatus": "@if(greater(length(coalesce(body('Verify_Change_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Verify_Change_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND')",
                                                             "hasProvisioningLogs": "@greater(length(coalesce(body('Verify_Change_Manager_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                                             "hasFailures": "@equals(toLower(coalesce(first(body('Verify_Change_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'failure')",
-                                                            "provisioningResult": "@if(equals(variables('ManagerTestScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Verify_Change_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Verify_Change_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND'), concat('Failed Action: ', variables('ManagerTestFailedActionName')))",
+                                                            "provisioningResult": "@if(equals(variables('ManagerTestScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Verify_Change_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), if(equals(toLower(coalesce(first(body('Verify_Change_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), 'success', concat('Verify_Change_Manager_Provisioning_Logs: ', coalesce(first(body('Verify_Change_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'))), 'Verify_Change_Manager_Provisioning_Logs: NO_LOGS_FOUND'), concat('Failed Action: ', variables('ManagerTestFailedActionName')))",
                                                             "provisioningErrorDetails": "@if(equals(variables('ManagerTestScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Verify_Change_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(first(body('Verify_Change_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status']), 'failure')), first(body('Verify_Change_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null), variables('ManagerTestFailedActionResponse'))",
                                                             "overallResult": "@if(equals(variables('ManagerTestScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Verify_Change_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('Verify_Change_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), 'PASSED', 'FAILED'), 'FAILED')"
                                                         }
@@ -2889,7 +2913,7 @@
                                                                     "name": "ManagerTestOutputs",
                                                                     "value": {
                                                                         "overallResult": "@outputs('Analyze_Phase3_Provisioning_Results')?['overallResult']",
-                                                                        "result": "@outputs('Analyze_Phase3_Provisioning_Results')?['provisioningResult']",
+                                                                        "result": "@if(equals(outputs('Analyze_Phase3_Provisioning_Results')?['overallResult'], 'FAILED'), concat('Update New Manager Phase: ', outputs('Analyze_Phase3_Provisioning_Results')?['provisioningResult']), outputs('Analyze_Phase3_Provisioning_Results')?['provisioningResult'])",
                                                                         "errorDetails": "@outputs('Analyze_Phase3_Provisioning_Results')?['provisioningErrorDetails']"
                                                                     }
                                                                 }
@@ -3004,7 +3028,7 @@
                                                                         "expression": "@and(greater(length(coalesce(body('Verify_Remove_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), and(equals(first(body('Verify_Remove_Manager_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['oldValue'], body('SCIM_Query_New_Manager')?['id']), or(empty(first(body('Verify_Remove_Manager_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['newValue']), equals(first(body('Verify_Remove_Manager_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['newValue'], 'null'))))",
                                                                         "limit": {
                                                                             "count": 150,
-                                                                            "timeout": "PT15M"
+                                                                            "timeout": "PT40M"
                                                                         },
                                                                         "type": "Until"
                                                                     }
@@ -3106,7 +3130,7 @@
                                                                     "removeManagerProvisioningStatus": "@if(greater(length(coalesce(body('Verify_Remove_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Verify_Remove_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND')",
                                                                     "hasProvisioningLogs": "@greater(length(coalesce(body('Verify_Remove_Manager_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                                                     "hasFailures": "@equals(toLower(coalesce(first(body('Verify_Remove_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'failure')",
-                                                                    "provisioningResult": "@if(equals(variables('ManagerTestScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Verify_Remove_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Verify_Remove_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND'), concat('Failed Action: ', variables('ManagerTestFailedActionName')))",
+                                                                    "provisioningResult": "@if(equals(variables('ManagerTestScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Verify_Remove_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), if(equals(toLower(coalesce(first(body('Verify_Remove_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), 'success', concat('Verify_Remove_Manager_Provisioning_Logs: ', coalesce(first(body('Verify_Remove_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'))), 'Verify_Remove_Manager_Provisioning_Logs: NO_LOGS_FOUND'), concat('Failed Action: ', variables('ManagerTestFailedActionName')))",
                                                                     "provisioningErrorDetails": "@if(equals(variables('ManagerTestScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Verify_Remove_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(first(body('Verify_Remove_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status']), 'failure')), first(body('Verify_Remove_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null), variables('ManagerTestFailedActionResponse'))",
                                                                     "overallResult": "@if(equals(variables('ManagerTestScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Verify_Remove_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('Verify_Remove_Manager_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), 'PASSED', 'FAILED'), 'FAILED')"
                                                                 }
@@ -3119,7 +3143,7 @@
                                                                             "name": "ManagerTestOutputs",
                                                                             "value": {
                                                                                 "overallResult": "@outputs('Analyze_Phase4_Provisioning_Results')?['overallResult']",
-                                                                                "result": "@outputs('Analyze_Phase4_Provisioning_Results')?['provisioningResult']",
+                                                                                "result": "@if(equals(outputs('Analyze_Phase4_Provisioning_Results')?['overallResult'], 'FAILED'), concat('Remove Manager Phase: ', outputs('Analyze_Phase4_Provisioning_Results')?['provisioningResult']), outputs('Analyze_Phase4_Provisioning_Results')?['provisioningResult'])",
                                                                                 "errorDetails": "@outputs('Analyze_Phase4_Provisioning_Results')?['provisioningErrorDetails']"
                                                                             }
                                                                         }
@@ -3409,7 +3433,7 @@
                                                 "expression": "@greater(length(coalesce(body('DisableUserTest_Disable_Create_Check_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                                 "limit": {
                                                     "count": 150,
-                                                    "timeout": "PT15M"
+                                                    "timeout": "PT40M"
                                                 },
                                                 "type": "Until"
                                             }
@@ -3511,7 +3535,7 @@
                                             "provisioningLogsCount": "@length(coalesce(body('DisableUserTest_Disable_Create_Check_Provisioning_Logs')?['value'], json('[]')))",
                                             "hasProvisioningLogs": "@greater(length(coalesce(body('DisableUserTest_Disable_Create_Check_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                             "provisioningStatus": "@if(greater(length(coalesce(body('DisableUserTest_Disable_Create_Check_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('DisableUserTest_Disable_Create_Check_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND')",
-                                            "provisioningResult": "@if(equals(variables('DisableUserScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('DisableUserTest_Disable_Create_Check_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('DisableUserTest_Disable_Create_Check_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND'), concat('Failed Action: ', variables('DisableUserFailedActionName')))",
+                                            "provisioningResult": "@if(equals(variables('DisableUserScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('DisableUserTest_Disable_Create_Check_Provisioning_Logs')?['value'], json('[]'))), 0), if(equals(toLower(coalesce(first(body('DisableUserTest_Disable_Create_Check_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), 'success', concat('DisableUserTest_Disable_Create_Check_Provisioning_Logs: ', coalesce(first(body('DisableUserTest_Disable_Create_Check_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'))), 'DisableUserTest_Disable_Create_Check_Provisioning_Logs: NO_LOGS_FOUND'), concat('Failed Action: ', variables('DisableUserFailedActionName')))",
                                             "provisioningErrorDetails": "@if(equals(variables('DisableUserScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('DisableUserTest_Disable_Create_Check_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(first(body('DisableUserTest_Disable_Create_Check_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status']), 'failure')), first(body('DisableUserTest_Disable_Create_Check_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null), variables('DisableUserFailedActionResponse'))",
                                             "overallResult": "@if(equals(variables('DisableUserScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('DisableUserTest_Disable_Create_Check_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('DisableUserTest_Disable_Create_Check_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), 'PASSED', 'FAILED'), 'FAILED')"
                                         }
@@ -3524,7 +3548,7 @@
                                                     "name": "DisableUserTestOutputs",
                                                     "value": {
                                                         "overallResult": "@outputs('DisableUserTest_Analyze_Phase1_Provisioning_Results')?['overallResult']",
-                                                        "result": "@outputs('DisableUserTest_Analyze_Phase1_Provisioning_Results')?['provisioningResult']",
+                                                        "result": "@if(equals(outputs('DisableUserTest_Analyze_Phase1_Provisioning_Results')?['overallResult'], 'FAILED'), concat('Create Phase: ', outputs('DisableUserTest_Analyze_Phase1_Provisioning_Results')?['provisioningResult']), outputs('DisableUserTest_Analyze_Phase1_Provisioning_Results')?['provisioningResult'])",
                                                         "errorDetails": "@outputs('DisableUserTest_Analyze_Phase1_Provisioning_Results')?['provisioningErrorDetails']"
                                                     }
                                                 }
@@ -3657,7 +3681,7 @@
                                                         "expression": "@greater(length(coalesce(body('DisableUserTest_Disable_Verify_Disable_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                                         "limit": {
                                                             "count": 150,
-                                                            "timeout": "PT15M"
+                                                            "timeout": "PT40M"
                                                         },
                                                         "type": "Until"
                                                     }
@@ -3759,7 +3783,7 @@
                                                     "provisioningLogsCount": "@length(coalesce(body('DisableUserTest_Disable_Verify_Disable_Provisioning_Logs')?['value'], json('[]')))",
                                                     "hasProvisioningLogs": "@greater(length(coalesce(body('DisableUserTest_Disable_Verify_Disable_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                                     "provisioningStatus": "@if(greater(length(coalesce(body('DisableUserTest_Disable_Verify_Disable_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('DisableUserTest_Disable_Verify_Disable_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND')",
-                                                    "provisioningResult": "@if(equals(variables('DisableUserScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('DisableUserTest_Disable_Verify_Disable_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('DisableUserTest_Disable_Verify_Disable_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND'), concat('Failed Action: ', variables('DisableUserFailedActionName')))",
+                                                    "provisioningResult": "@if(equals(variables('DisableUserScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('DisableUserTest_Disable_Verify_Disable_Provisioning_Logs')?['value'], json('[]'))), 0), if(equals(toLower(coalesce(first(body('DisableUserTest_Disable_Verify_Disable_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), 'success', concat('DisableUserTest_Disable_Verify_Disable_Provisioning_Logs: ', coalesce(first(body('DisableUserTest_Disable_Verify_Disable_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'))), 'DisableUserTest_Disable_Verify_Disable_Provisioning_Logs: NO_LOGS_FOUND'), concat('Failed Action: ', variables('DisableUserFailedActionName')))",
                                                     "provisioningErrorDetails": "@if(equals(variables('DisableUserScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('DisableUserTest_Disable_Verify_Disable_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(first(body('DisableUserTest_Disable_Verify_Disable_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status']), 'failure')), first(body('DisableUserTest_Disable_Verify_Disable_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null), variables('DisableUserFailedActionResponse'))",
                                                     "overallResult": "@if(equals(variables('DisableUserScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('DisableUserTest_Disable_Verify_Disable_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('DisableUserTest_Disable_Verify_Disable_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), 'PASSED', 'FAILED'), 'FAILED')"
                                                 }
@@ -3772,7 +3796,7 @@
                                                             "name": "DisableUserTestOutputs",
                                                             "value": {
                                                                 "overallResult": "@outputs('DisableUserTest_Analyze_Phase2_Provisioning_Results')?['overallResult']",
-                                                                "result": "@outputs('DisableUserTest_Analyze_Phase2_Provisioning_Results')?['provisioningResult']",
+                                                                "result": "@if(equals(outputs('DisableUserTest_Analyze_Phase2_Provisioning_Results')?['overallResult'], 'FAILED'), concat('Disable Phase: ', outputs('DisableUserTest_Analyze_Phase2_Provisioning_Results')?['provisioningResult']), outputs('DisableUserTest_Analyze_Phase2_Provisioning_Results')?['provisioningResult'])",
                                                                 "errorDetails": "@outputs('DisableUserTest_Analyze_Phase2_Provisioning_Results')?['provisioningErrorDetails']"
                                                             }
                                                         }
@@ -4020,7 +4044,7 @@
                                         "expression": "@greater(length(coalesce(body('Verify_Group_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                         "limit": {
                                             "count": 150,
-                                            "timeout": "PT15M"
+                                            "timeout": "PT40M"
                                         },
                                         "type": "Until"
                                     }
@@ -4122,7 +4146,7 @@
                                     "provisioningLogsCount": "@length(coalesce(body('Verify_Group_Provisioning_Logs')?['value'], json('[]')))",
                                     "hasProvisioningLogs": "@greater(length(coalesce(body('Verify_Group_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                     "provisioningStatus": "@if(greater(length(coalesce(body('Verify_Group_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Verify_Group_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND')",
-                                    "provisioningResult": "@if(equals(variables('CreateGroupScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Verify_Group_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Verify_Group_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND'), concat('Failed Action: ', variables('CreateGroupFailedActionName')))",
+                                    "provisioningResult": "@if(equals(variables('CreateGroupScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Verify_Group_Provisioning_Logs')?['value'], json('[]'))), 0), if(equals(toLower(coalesce(first(body('Verify_Group_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), 'success', concat('Verify_Group_Provisioning_Logs: ', coalesce(first(body('Verify_Group_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'))), 'Verify_Group_Provisioning_Logs: NO_LOGS_FOUND'), concat('Failed Action: ', variables('CreateGroupFailedActionName')))",
                                     "provisioningErrorDetails": "@if(equals(variables('CreateGroupScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Verify_Group_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(first(body('Verify_Group_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status']), 'failure')), first(body('Verify_Group_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null), variables('CreateGroupFailedActionResponse'))",
                                     "overallResult": "@if(equals(variables('CreateGroupScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Verify_Group_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('Verify_Group_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), 'PASSED', 'FAILED'), 'FAILED')"
                                 }
@@ -4346,7 +4370,7 @@
                                                 "expression": "@greater(length(coalesce(body('Update_Group_Verify_Create_Provisioning')?['value'], json('[]'))), 0)",
                                                 "limit": {
                                                     "count": 150,
-                                                    "timeout": "PT15M"
+                                                    "timeout": "PT40M"
                                                 },
                                                 "type": "Until"
                                             }
@@ -4448,7 +4472,7 @@
                                             "provisioningLogsCount": "@length(coalesce(body('Update_Group_Verify_Create_Provisioning')?['value'], json('[]')))",
                                             "hasProvisioningLogs": "@greater(length(coalesce(body('Update_Group_Verify_Create_Provisioning')?['value'], json('[]'))), 0)",
                                             "provisioningStatus": "@if(greater(length(coalesce(body('Update_Group_Verify_Create_Provisioning')?['value'], json('[]'))), 0), coalesce(first(body('Update_Group_Verify_Create_Provisioning')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND')",
-                                            "provisioningResult": "@if(equals(variables('UpdateGroupScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Update_Group_Verify_Create_Provisioning')?['value'], json('[]'))), 0), coalesce(first(body('Update_Group_Verify_Create_Provisioning')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND'), concat('Failed Action: ', variables('UpdateGroupFailedActionName')))",
+                                            "provisioningResult": "@if(equals(variables('UpdateGroupScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Update_Group_Verify_Create_Provisioning')?['value'], json('[]'))), 0), if(equals(toLower(coalesce(first(body('Update_Group_Verify_Create_Provisioning')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), 'success', concat('Update_Group_Verify_Create_Provisioning: ', coalesce(first(body('Update_Group_Verify_Create_Provisioning')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'))), 'Update_Group_Verify_Create_Provisioning: NO_LOGS_FOUND'), concat('Failed Action: ', variables('UpdateGroupFailedActionName')))",
                                             "provisioningErrorDetails": "@if(equals(variables('UpdateGroupScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Update_Group_Verify_Create_Provisioning')?['value'], json('[]'))), 0), equals(toLower(first(body('Update_Group_Verify_Create_Provisioning')?['value'])?['provisioningStatusInfo']?['status']), 'failure')), first(body('Update_Group_Verify_Create_Provisioning')?['value'])?['provisioningStatusInfo']?['errorInformation'], null), variables('UpdateGroupFailedActionResponse'))",
                                             "overallResult": "@if(equals(variables('UpdateGroupScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Update_Group_Verify_Create_Provisioning')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('Update_Group_Verify_Create_Provisioning')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), 'PASSED', 'FAILED'), 'FAILED')"
                                         }
@@ -4461,7 +4485,7 @@
                                                     "name": "UpdateGroupTestOutputs",
                                                     "value": {
                                                         "overallResult": "@outputs('Update_Group_Analyze_Create_Provisioning')?['overallResult']",
-                                                        "result": "@outputs('Update_Group_Analyze_Create_Provisioning')?['provisioningResult']",
+                                                        "result": "@if(equals(outputs('Update_Group_Analyze_Create_Provisioning')?['overallResult'], 'FAILED'), concat('Create Phase: ', outputs('Update_Group_Analyze_Create_Provisioning')?['provisioningResult']), outputs('Update_Group_Analyze_Create_Provisioning')?['provisioningResult'])",
                                                         "errorDetails": "@outputs('Update_Group_Analyze_Create_Provisioning')?['provisioningErrorDetails']"
                                                     }
                                                 }
@@ -4597,7 +4621,7 @@
                                                         "expression": "@greater(length(coalesce(body('Update_Group_Verify_Update_Provisioning')?['value'], json('[]'))), 0)",
                                                         "limit": {
                                                             "count": 150,
-                                                            "timeout": "PT15M"
+                                                            "timeout": "PT40M"
                                                         },
                                                         "type": "Until"
                                                     }
@@ -4699,7 +4723,7 @@
                                                     "provisioningLogsCount": "@length(coalesce(body('Update_Group_Verify_Update_Provisioning')?['value'], json('[]')))",
                                                     "hasProvisioningLogs": "@greater(length(coalesce(body('Update_Group_Verify_Update_Provisioning')?['value'], json('[]'))), 0)",
                                                     "provisioningStatus": "@if(greater(length(coalesce(body('Update_Group_Verify_Update_Provisioning')?['value'], json('[]'))), 0), coalesce(first(body('Update_Group_Verify_Update_Provisioning')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND')",
-                                                    "provisioningResult": "@if(equals(variables('UpdateGroupScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Update_Group_Verify_Update_Provisioning')?['value'], json('[]'))), 0), coalesce(first(body('Update_Group_Verify_Update_Provisioning')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND'), concat('Failed Action: ', variables('UpdateGroupFailedActionName')))",
+                                                    "provisioningResult": "@if(equals(variables('UpdateGroupScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Update_Group_Verify_Update_Provisioning')?['value'], json('[]'))), 0), if(equals(toLower(coalesce(first(body('Update_Group_Verify_Update_Provisioning')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), 'success', concat('Update_Group_Verify_Update_Provisioning: ', coalesce(first(body('Update_Group_Verify_Update_Provisioning')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'))), 'Update_Group_Verify_Update_Provisioning: NO_LOGS_FOUND'), concat('Failed Action: ', variables('UpdateGroupFailedActionName')))",
                                                     "provisioningErrorDetails": "@if(equals(variables('UpdateGroupScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Update_Group_Verify_Update_Provisioning')?['value'], json('[]'))), 0), equals(toLower(first(body('Update_Group_Verify_Update_Provisioning')?['value'])?['provisioningStatusInfo']?['status']), 'failure')), first(body('Update_Group_Verify_Update_Provisioning')?['value'])?['provisioningStatusInfo']?['errorInformation'], null), variables('UpdateGroupFailedActionResponse'))",
                                                     "overallResult": "@if(equals(variables('UpdateGroupScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Update_Group_Verify_Update_Provisioning')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('Update_Group_Verify_Update_Provisioning')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), 'PASSED', 'FAILED'), 'FAILED')"
                                                 }
@@ -4712,7 +4736,7 @@
                                                             "name": "UpdateGroupTestOutputs",
                                                             "value": {
                                                                 "overallResult": "@outputs('Update_Group_Analyze_Update_Provisioning')?['overallResult']",
-                                                                "result": "@outputs('Update_Group_Analyze_Update_Provisioning')?['provisioningResult']",
+                                                                "result": "@if(equals(outputs('Update_Group_Analyze_Update_Provisioning')?['overallResult'], 'FAILED'), concat('Update Phase: ', outputs('Update_Group_Analyze_Update_Provisioning')?['provisioningResult']), outputs('Update_Group_Analyze_Update_Provisioning')?['provisioningResult'])",
                                                                 "errorDetails": "@outputs('Update_Group_Analyze_Update_Provisioning')?['provisioningErrorDetails']"
                                                             }
                                                         }
@@ -4885,8 +4909,8 @@
                                                 },
                                                 "expression": "@greater(length(coalesce(body('Delete_Group_Verify_Create_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                                 "limit": {
-                                                    "count": 140,
-                                                    "timeout": "PT15M"
+                                                    "count": 150,
+                                                    "timeout": "PT40M"
                                                 },
                                                 "type": "Until"
                                             },
@@ -5049,7 +5073,7 @@
                                             "provisioningLogsCount": "@length(coalesce(body('Delete_Group_Verify_Create_Provisioning_Logs')?['value'], json('[]')))",
                                             "hasProvisioningLogs": "@greater(length(coalesce(body('Delete_Group_Verify_Create_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                             "provisioningStatus": "@if(greater(length(coalesce(body('Delete_Group_Verify_Create_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Delete_Group_Verify_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND')",
-                                            "provisioningResult": "@if(equals(variables('DeleteGroupScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Delete_Group_Verify_Create_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Delete_Group_Verify_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND'), concat('Failed Action: ', variables('DeleteGroupFailedActionName')))",
+                                            "provisioningResult": "@if(equals(variables('DeleteGroupScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Delete_Group_Verify_Create_Provisioning_Logs')?['value'], json('[]'))), 0), if(equals(toLower(coalesce(first(body('Delete_Group_Verify_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), 'success', concat('Delete_Group_Verify_Create_Provisioning_Logs: ', coalesce(first(body('Delete_Group_Verify_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'))), 'Delete_Group_Verify_Create_Provisioning_Logs: NO_LOGS_FOUND'), concat('Failed Action: ', variables('DeleteGroupFailedActionName')))",
                                             "provisioningErrorDetails": "@if(equals(variables('DeleteGroupScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Delete_Group_Verify_Create_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(first(body('Delete_Group_Verify_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status']), 'failure')), first(body('Delete_Group_Verify_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null), variables('DeleteGroupFailedActionResponse'))",
                                             "overallResult": "@if(equals(variables('DeleteGroupScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Delete_Group_Verify_Create_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('Delete_Group_Verify_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), 'PASSED', 'FAILED'), 'FAILED')"
                                         }
@@ -5168,8 +5192,8 @@
                                                         },
                                                         "expression": "@greater(length(coalesce(body('Delete_Group_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                                         "limit": {
-                                                            "count": 140,
-                                                            "timeout": "PT15M"
+                                                            "count": 150,
+                                                            "timeout": "PT40M"
                                                         },
                                                         "type": "Until"
                                                     }
@@ -5271,7 +5295,7 @@
                                                     "provisioningLogsCount": "@length(coalesce(body('Delete_Group_Verify_Delete_Provisioning_Logs')?['value'], json('[]')))",
                                                     "hasProvisioningLogs": "@greater(length(coalesce(body('Delete_Group_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                                     "provisioningStatus": "@if(greater(length(coalesce(body('Delete_Group_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Delete_Group_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND')",
-                                                    "provisioningResult": "@if(equals(variables('DeleteGroupScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Delete_Group_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Delete_Group_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND'), concat('Failed Action: ', variables('DeleteGroupFailedActionName')))",
+                                                    "provisioningResult": "@if(equals(variables('DeleteGroupScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Delete_Group_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0), if(equals(toLower(coalesce(first(body('Delete_Group_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), 'success', concat('Delete_Group_Verify_Delete_Provisioning_Logs: ', coalesce(first(body('Delete_Group_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'))), 'Delete_Group_Verify_Delete_Provisioning_Logs: NO_LOGS_FOUND'), concat('Failed Action: ', variables('DeleteGroupFailedActionName')))",
                                                     "provisioningErrorDetails": "@if(equals(variables('DeleteGroupScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Delete_Group_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(first(body('Delete_Group_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status']), 'failure')), first(body('Delete_Group_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null), variables('DeleteGroupFailedActionResponse'))",
                                                     "overallResult": "@if(equals(variables('DeleteGroupScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Delete_Group_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('Delete_Group_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), 'PASSED', 'FAILED'), 'FAILED')"
                                                 }
@@ -5284,7 +5308,7 @@
                                                             "name": "DeleteGroupTestOutputs",
                                                             "value": {
                                                                 "overallResult": "@coalesce(outputs('Delete_Group_Analyze_Delete_Provisioning_Results')?['overallResult'], 'FAILED')",
-                                                                "result": "@coalesce(outputs('Delete_Group_Analyze_Delete_Provisioning_Results')?['provisioningResult'], 'SKIPPED')",
+                                                                "result": "@if(equals(coalesce(outputs('Delete_Group_Analyze_Delete_Provisioning_Results')?['overallResult'], 'FAILED'), 'FAILED'), concat('Delete Phase: ', coalesce(outputs('Delete_Group_Analyze_Delete_Provisioning_Results')?['provisioningResult'], 'SKIPPED')), coalesce(outputs('Delete_Group_Analyze_Delete_Provisioning_Results')?['provisioningResult'], 'SKIPPED'))",
                                                                 "errorDetails": "@coalesce(outputs('Delete_Group_Analyze_Delete_Provisioning_Results')?['provisioningErrorDetails'], null)"
                                                             }
                                                         }
@@ -5328,7 +5352,7 @@
                                                     "name": "DeleteGroupTestOutputs",
                                                     "value": {
                                                         "overallResult": "@outputs('Delete_Group_Analyze_Create_Provisioning_Results')?['overallResult']",
-                                                        "result": "@outputs('Delete_Group_Analyze_Create_Provisioning_Results')?['provisioningResult']",
+                                                        "result": "@if(equals(outputs('Delete_Group_Analyze_Create_Provisioning_Results')?['overallResult'], 'FAILED'), concat('Create Phase: ', outputs('Delete_Group_Analyze_Create_Provisioning_Results')?['provisioningResult']), outputs('Delete_Group_Analyze_Create_Provisioning_Results')?['provisioningResult'])",
                                                         "errorDetails": "@outputs('Delete_Group_Analyze_Create_Provisioning_Results')?['provisioningErrorDetails']"
                                                     }
                                                 }
@@ -5492,8 +5516,8 @@
                                                 },
                                                 "expression": "@and(greater(length(coalesce(body('Add_Member_Verify_Group_Create_Provisioning_Logs')?['value'], json('[]'))), 0), greater(length(coalesce(body('Add_Member_Verify_User_Create_Provisioning_Logs')?['value'], json('[]'))), 0))",
                                                 "limit": {
-                                                    "count": 140,
-                                                    "timeout": "PT15M"
+                                                    "count": 150,
+                                                    "timeout": "PT40M"
                                                 },
                                                 "type": "Until"
                                             },
@@ -5783,8 +5807,8 @@
                                                         },
                                                         "expression": "@and(greater(length(coalesce(body('Add_Member_Verify_Add_Member_Provisioning_Logs')?['value'], json('[]'))), 0), and(empty(first(body('Add_Member_Verify_Add_Member_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['oldValue']), not(empty(first(body('Add_Member_Verify_Add_Member_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['newValue']))))",
                                                         "limit": {
-                                                            "count": 140,
-                                                            "timeout": "PT15M"
+                                                            "count": 150,
+                                                            "timeout": "PT40M"
                                                         },
                                                         "type": "Until"
                                                     }
@@ -5886,7 +5910,7 @@
                                                     "provisioningLogsCount": "@length(coalesce(body('Add_Member_Verify_Add_Member_Provisioning_Logs')?['value'], json('[]')))",
                                                     "hasProvisioningLogs": "@greater(length(coalesce(body('Add_Member_Verify_Add_Member_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                                     "provisioningStatus": "@if(greater(length(coalesce(body('Add_Member_Verify_Add_Member_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Add_Member_Verify_Add_Member_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND')",
-                                                    "provisioningResult": "@if(equals(variables('AddMemberScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Add_Member_Verify_Add_Member_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Add_Member_Verify_Add_Member_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND'), concat('Failed Action: ', variables('AddMemberFailedActionName')))",
+                                                    "provisioningResult": "@if(equals(variables('AddMemberScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Add_Member_Verify_Add_Member_Provisioning_Logs')?['value'], json('[]'))), 0), if(equals(toLower(coalesce(first(body('Add_Member_Verify_Add_Member_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), 'success', concat('Add_Member_Verify_Add_Member_Provisioning_Logs: ', coalesce(first(body('Add_Member_Verify_Add_Member_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'))), 'Add_Member_Verify_Add_Member_Provisioning_Logs: NO_LOGS_FOUND'), concat('Failed Action: ', variables('AddMemberFailedActionName')))",
                                                     "provisioningErrorDetails": "@if(equals(variables('AddMemberScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Add_Member_Verify_Add_Member_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(first(body('Add_Member_Verify_Add_Member_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status']), 'failure')), first(body('Add_Member_Verify_Add_Member_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null), variables('AddMemberFailedActionResponse'))",
                                                     "overallResult": "@if(equals(variables('AddMemberScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Add_Member_Verify_Add_Member_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('Add_Member_Verify_Add_Member_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), 'PASSED', 'FAILED'), 'FAILED')"
                                                 }
@@ -6220,8 +6244,8 @@
                                                 },
                                                 "expression": "@and(greater(length(coalesce(body('Remove_Member_Verify_Group_Create_Provisioning_Logs')?['value'], json('[]'))), 0), greater(length(coalesce(body('Remove_Member_Verify_User_Create_Provisioning_Logs')?['value'], json('[]'))), 0), and(not(empty(first(body('Remove_Member_Verify_Group_Create_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['newValue'])), empty(first(body('Remove_Member_Verify_Group_Create_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['oldValue'])))",
                                                 "limit": {
-                                                    "count": 140,
-                                                    "timeout": "PT15M"
+                                                    "count": 150,
+                                                    "timeout": "PT40M"
                                                 },
                                                 "type": "Until"
                                             },
@@ -6408,7 +6432,7 @@
                                         "type": "Compose",
                                         "inputs": {
                                             "provisioningStatus": "@concat('Group: ', if(greater(length(coalesce(body('Remove_Member_Verify_Group_Create_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Remove_Member_Verify_Group_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS'), ', User: ', if(greater(length(coalesce(body('Remove_Member_Verify_User_Create_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Remove_Member_Verify_User_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS'))",
-                                            "provisioningResult": "@if(equals(variables('RemoveMemberScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Remove_Member_Verify_Group_Create_Provisioning_Logs')?['value'], json('[]'))), 0), greater(length(coalesce(body('Remove_Member_Verify_User_Create_Provisioning_Logs')?['value'], json('[]'))), 0)), concat('Group: ', coalesce(first(body('Remove_Member_Verify_Group_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), ', User: ', coalesce(first(body('Remove_Member_Verify_User_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN')), 'PROVISIONING_LOGS_MISSING'), concat('Failed Action: ', variables('RemoveMemberFailedActionName')))",
+                                            "provisioningResult": "@if(equals(variables('RemoveMemberScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Remove_Member_Verify_Group_Create_Provisioning_Logs')?['value'], json('[]'))), 0), greater(length(coalesce(body('Remove_Member_Verify_User_Create_Provisioning_Logs')?['value'], json('[]'))), 0)), concat('Group: ', if(equals(toLower(coalesce(first(body('Remove_Member_Verify_Group_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), 'success', concat('Remove_Member_Verify_Group_Create_Provisioning_Logs: ', coalesce(first(body('Remove_Member_Verify_Group_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'))), ', User: ', if(equals(toLower(coalesce(first(body('Remove_Member_Verify_User_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), 'success', concat('Remove_Member_Verify_User_Create_Provisioning_Logs: ', coalesce(first(body('Remove_Member_Verify_User_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN')))), 'PROVISIONING_LOGS_MISSING'), concat('Failed Action: ', variables('RemoveMemberFailedActionName')))",
                                             "provisioningErrorDetails": "@if(equals(variables('RemoveMemberScopeExecutionStatus'), 'Succeeded'), if(or(and(greater(length(coalesce(body('Remove_Member_Verify_Group_Create_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(first(body('Remove_Member_Verify_Group_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status']), 'failure')), and(greater(length(coalesce(body('Remove_Member_Verify_User_Create_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(first(body('Remove_Member_Verify_User_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status']), 'failure'))), json(concat('{\"group\":', string(coalesce(first(body('Remove_Member_Verify_Group_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null)), ',\"user\":', string(coalesce(first(body('Remove_Member_Verify_User_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null)), '}')), null), variables('RemoveMemberFailedActionResponse'))",
                                             "overallResult": "@if(equals(variables('RemoveMemberScopeExecutionStatus'), 'Succeeded'), if(and(and(greater(length(coalesce(body('Remove_Member_Verify_Group_Create_Provisioning_Logs')?['value'], json('[]'))), 0), greater(length(coalesce(body('Remove_Member_Verify_User_Create_Provisioning_Logs')?['value'], json('[]'))), 0)), and(equals(toLower(coalesce(first(body('Remove_Member_Verify_Group_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), equals(toLower(coalesce(first(body('Remove_Member_Verify_User_Create_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'))), 'PASSED', 'FAILED'), 'FAILED')"
                                         }
@@ -6527,8 +6551,8 @@
                                                         },
                                                         "expression": "@and(greater(length(coalesce(body('Remove_Member_Verify_Remove_Member_Provisioning_Logs')?['value'], json('[]'))), 0), and(not(empty(first(body('Remove_Member_Verify_Remove_Member_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['oldValue'])), empty(first(body('Remove_Member_Verify_Remove_Member_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['newValue'])))",
                                                         "limit": {
-                                                            "count": 140,
-                                                            "timeout": "PT15M"
+                                                            "count": 150,
+                                                            "timeout": "PT40M"
                                                         },
                                                         "type": "Until"
                                                     }
@@ -6630,7 +6654,7 @@
                                                     "provisioningLogsCount": "@length(coalesce(body('Remove_Member_Verify_Remove_Member_Provisioning_Logs')?['value'], json('[]')))",
                                                     "hasProvisioningLogs": "@greater(length(coalesce(body('Remove_Member_Verify_Remove_Member_Provisioning_Logs')?['value'], json('[]'))), 0)",
                                                     "provisioningStatus": "@if(equals(variables('RemoveMemberScopeExecutionStatus'), 'Failed'), 'FAILED', if(greater(length(coalesce(body('Remove_Member_Verify_Remove_Member_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Remove_Member_Verify_Remove_Member_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND'))",
-                                                    "provisioningResult": "@if(equals(variables('RemoveMemberScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Remove_Member_Verify_Remove_Member_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('Remove_Member_Verify_Remove_Member_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND'), concat('Failed Action: ', variables('RemoveMemberFailedActionName')))",
+                                                    "provisioningResult": "@if(equals(variables('RemoveMemberScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('Remove_Member_Verify_Remove_Member_Provisioning_Logs')?['value'], json('[]'))), 0), if(equals(toLower(coalesce(first(body('Remove_Member_Verify_Remove_Member_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), 'success', concat('Remove_Member_Verify_Remove_Member_Provisioning_Logs: ', coalesce(first(body('Remove_Member_Verify_Remove_Member_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'))), 'Remove_Member_Verify_Remove_Member_Provisioning_Logs: NO_LOGS_FOUND'), concat('Failed Action: ', variables('RemoveMemberFailedActionName')))",
                                                     "provisioningErrorDetails": "@if(equals(variables('RemoveMemberScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Remove_Member_Verify_Remove_Member_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(first(body('Remove_Member_Verify_Remove_Member_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status']), 'failure')), first(body('Remove_Member_Verify_Remove_Member_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null), variables('RemoveMemberFailedActionResponse'))",
                                                     "overallResult": "@if(equals(variables('RemoveMemberScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('Remove_Member_Verify_Remove_Member_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('Remove_Member_Verify_Remove_Member_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), 'PASSED', 'FAILED'), 'FAILED')"
                                                 }
@@ -6643,7 +6667,7 @@
                                                             "name": "RemoveMemberTestOutputs",
                                                             "value": {
                                                                 "overallResult": "@outputs('Remove_Member_Analyze_Remove_Member_Provisioning_Results')?['overallResult']",
-                                                                "result": "@outputs('Remove_Member_Analyze_Remove_Member_Provisioning_Results')?['provisioningResult']",
+                                                                "result": "@if(equals(outputs('Remove_Member_Analyze_Remove_Member_Provisioning_Results')?['overallResult'], 'FAILED'), concat('Remove Member Phase: ', outputs('Remove_Member_Analyze_Remove_Member_Provisioning_Results')?['provisioningResult']), outputs('Remove_Member_Analyze_Remove_Member_Provisioning_Results')?['provisioningResult'])",
                                                                 "errorDetails": "@outputs('Remove_Member_Analyze_Remove_Member_Provisioning_Results')?['provisioningErrorDetails']"
                                                             }
                                                         }
@@ -6799,7 +6823,7 @@
                                                     "name": "RemoveMemberTestOutputs",
                                                     "value": {
                                                         "overallResult": "@outputs('Remove_Member_Analyze_Group_Create_Provisioning_Results')?['overallResult']",
-                                                        "result": "@outputs('Remove_Member_Analyze_Group_Create_Provisioning_Results')?['provisioningResult']",
+                                                        "result": "@if(equals(outputs('Remove_Member_Analyze_Group_Create_Provisioning_Results')?['overallResult'], 'FAILED'), concat('Create Phase: ', outputs('Remove_Member_Analyze_Group_Create_Provisioning_Results')?['provisioningResult']), outputs('Remove_Member_Analyze_Group_Create_Provisioning_Results')?['provisioningResult'])",
                                                         "errorDetails": "@outputs('Remove_Member_Analyze_Group_Create_Provisioning_Results')?['provisioningErrorDetails']"
                                                     }
                                                 }
@@ -7196,6 +7220,23 @@
                     }
                 }
             },
+            "Initialize_MappedSources": {
+                "runAfter": {
+                    "Parse_Templates": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "mappedSources",
+                            "type": "Array",
+                            "value": []
+                        }
+                    ]
+                }
+            },
             "Process_Template_Mappings": {
                 "actions": {
                     "ForEach_Templates": {
@@ -7332,33 +7373,16 @@
                     ]
                 },
                 "type": "Scope"
-            },
-            "Initialize_MappedSources": {
-                "runAfter": {
-                    "Parse_Templates": [
-                        "Succeeded"
-                    ]
-                },
-                "type": "InitializeVariable",
-                "inputs": {
-                    "variables": [
-                        {
-                            "name": "mappedSources",
-                            "type": "Array",
-                            "value": []
-                        }
-                    ]
-                }
             }
         },
         "outputs": {},
         "parameters": {
             "servicePrincipalId": {
-                "defaultValue": "{default}",
+                "defaultValue": "71e8e642-bd79-4d15-8f39-3b1dc6c8cd09",
                 "type": "String"
             },
             "scimEndpoint": {
-                "defaultValue": "{default}",
+                "defaultValue": "https://scimdemo.etelej.com/sainilogicapp1",
                 "type": "String"
             },
             "scimBearerToken": {
@@ -7369,7 +7393,7 @@
                 }
             },
             "testUserDomain": {
-                "defaultValue": "proviamtest05.onmicrosoft.com",
+                "defaultValue": "proviamtest06.onmicrosoft.com",
                 "type": "String"
             },
             "templateId": {
@@ -7397,16 +7421,16 @@
             "defaultUserProperties": {
                 "defaultValue": [
                     {
-                        "displayName": "Test User",
-                        "mailNickname": "testuser",
+                        "displayName": "User1",
+                        "mailNickname": "testuser1",
                         "passwordProfile": {
                             "forceChangePasswordNextSignIn": true,
                             "password": "Pass@word123"
                         },
-                        "givenName": "Test",
+                        "givenName": "User1 Given",
                         "surname": "User",
                         "jobTitle": "Software Engineer",
-                        "department": "Consulting",
+                        "department": "Legal",
                         "companyName": "Test Company",
                         "businessPhones": [
                             "+1-555-0100"
@@ -7420,7 +7444,7 @@
                         "streetAddress": "123 Test Street",
                         "city": "Seattle",
                         "state": "WA",
-                        "country": "IN",
+                        "country": "US",
                         "postalCode": "98101",
                         "usageLocation": "US",
                         "hireDate": "2023-01-01T00:00:00Z",
@@ -7432,16 +7456,16 @@
                         "otherMails": []
                     },
                     {
-                        "displayName": "Updated User",
-                        "mailNickname": "testuser",
+                        "displayName": "User2",
+                        "mailNickname": "testuser2",
                         "passwordProfile": {
                             "forceChangePasswordNextSignIn": true,
                             "password": "Pass@word123"
                         },
-                        "givenName": "Test",
+                        "givenName": "User2 Given",
                         "surname": "User",
                         "jobTitle": "Software Dev Engineer",
-                        "department": "HR",
+                        "department": "Legal",
                         "companyName": "Test Company",
                         "businessPhones": [
                             "+1-555-2001"
@@ -7467,16 +7491,16 @@
                         "otherMails": []
                     },
                     {
-                        "displayName": "Test USer",
-                        "mailNickname": "testuser",
+                        "displayName": "User3",
+                        "mailNickname": "testuser3",
                         "passwordProfile": {
                             "forceChangePasswordNextSignIn": true,
                             "password": "Pass@word123"
                         },
-                        "givenName": "Test Given",
+                        "givenName": "User3 Given",
                         "surname": "User",
                         "jobTitle": "Research Scientist",
-                        "department": "Research",
+                        "department": "Legal",
                         "companyName": "Test Company",
                         "businessPhones": [
                             "+1-555-2001"
