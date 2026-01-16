@@ -55,9 +55,37 @@
                         "type": "Compose",
                         "inputs": "@{coalesce(first(body('List_Existing_Jobs')?['value'])?['id'])}"
                     },
-                    "Get_App_Roles": {
+                    "Get_Job_Details": {
                         "runAfter": {
                             "Compose_SyncJobId": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "Http",
+                        "inputs": {
+                            "uri": "https://graph.microsoft.com/v1.0/servicePrincipals/@{parameters('servicePrincipalId')}/synchronization/jobs/@{outputs('Compose_SyncJobId')}",
+                            "method": "GET",
+                            "authentication": {
+                                "type": "ManagedServiceIdentity",
+                                "audience": "https://graph.microsoft.com/"
+                            }
+                        }
+                    },
+                    "Compose_Job_Settings_And_Templates": {
+                        "runAfter": {
+                            "Get_Job_Details": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "Compose",
+                        "inputs": {
+                            "jobSettings": "@body('Get_Job_Details')",
+                            "templates": "@body('Get_Templates')"
+                        }
+                    },
+                    "Get_App_Roles": {
+                        "runAfter": {
+                            "Compose_Job_Settings_And_Templates": [
                                 "Succeeded"
                             ]
                         },
@@ -113,20 +141,6 @@
                 "runAfter": {},
                 "type": "Scope"
             },
-            "Check_Enabled_Tests": {
-                "runAfter": {
-                    "Initialize_Tests": [
-                        "Succeeded"
-                    ]
-                },
-                "type": "Compose",
-                "inputs": {
-                    "enabledTests": "@parameters('EnabledTests')",
-                    "isCreateUserEnabled": "@or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Create_User_Test'))",
-                    "isUpdateUserEnabled": "@or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Update_User_Test'))",
-                    "isCreateGroupEnabled": "@or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Create_Group_Test'))"
-                }
-            },
             "Evaluate_Test_Results": {
                 "runAfter": {
                     "UserTests_Scope": [
@@ -146,32 +160,32 @@
                 "inputs": {
                     "enabledTestsEvaluation": {
                         "createUserTestEnabled": "@or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Create_User_Test'))",
-                        "createGroupTestEnabled": "@or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Create_Group_Test'))",
+                        "createGroupTestEnabled": "@and(parameters('IsGroupSupported'), or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Create_Group_Test')))",
                         "updateUserTestEnabled": "@or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Update_User_Test'))",
                         "disableUserTestEnabled": "@or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Disable_User_Test'))",
                         "deleteUserTestEnabled": "@or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Delete_User_Test'))",
-                        "managerTestEnabled": "@or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests')), equals(parameters('EnabledTests'), 'User_Update_Manager_Test'))",
-                        "updateGroupTestEnabled": "@or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Update_Group_Test'))",
-                        "deleteGroupTestEnabled": "@or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Delete_Group_Test'))",
-                        "addMemberTestEnabled": "@or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests')), equals(parameters('EnabledTests'), 'Group_Update_Add_Member_Test'))",
-                        "removeMemberTestEnabled": "@or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests')), equals(parameters('EnabledTests'), 'Group_Update_Remove_Member_Test'))"
+                        "managerTestEnabled": "@and(parameters('IsManagerAttributeSupported'), or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests')), equals(parameters('EnabledTests'), 'User_Update_Manager_Test')))",
+                        "updateGroupTestEnabled": "@and(parameters('IsGroupSupported'), or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Update_Group_Test')))",
+                        "deleteGroupTestEnabled": "@and(parameters('IsGroupSupported'), or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Delete_Group_Test')))",
+                        "addMemberTestEnabled": "@and(parameters('IsGroupSupported'), or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests')), equals(parameters('EnabledTests'), 'Group_Update_Add_Member_Test')))",
+                        "removeMemberTestEnabled": "@and(parameters('IsGroupSupported'), or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests')), equals(parameters('EnabledTests'), 'Group_Update_Remove_Member_Test')))"
                     },
                     "testResults": {
                         "createUserTestResult": "@if(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Create_User_Test')), variables('CreateUserTestOutputs')['overallResult'], 'SKIPPED')",
                         "updateUserTestResult": "@if(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Update_User_Test')), variables('UpdateUserTestOutputs')['overallResult'], 'SKIPPED')",
                         "disableUserTestResult": "@if(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Disable_User_Test')), variables('DisableUserTestOutputs')['overallResult'], 'SKIPPED')",
                         "deleteUserTestResult": "@if(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Delete_User_Test')), variables('DeleteUserTestOutputs')['overallResult'], 'SKIPPED')",
-                        "managerTestResult": "@if(or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests')), equals(parameters('EnabledTests'), 'User_Update_Manager_Test')), variables('ManagerTestOutputs')['overallResult'], 'SKIPPED')",
-                        "createGroupTestResult": "@if(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Create_Group_Test')), variables('CreateGroupTestOutputs')['overallResult'], 'SKIPPED')",
-                        "updateGroupTestResult": "@if(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Update_Group_Test')), variables('UpdateGroupTestOutputs')['overallResult'], 'SKIPPED')",
-                        "deleteGroupTestResult": "@if(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Delete_Group_Test')), variables('DeleteGroupTestOutputs')['overallResult'], 'SKIPPED')",
-                        "addMemberTestResult": "@if(or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests')), equals(parameters('EnabledTests'), 'Group_Update_Add_Member_Test')), variables('AddMemberTestOutputs')['overallResult'], 'SKIPPED')",
-                        "removeMemberTestResult": "@if(or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests')), equals(parameters('EnabledTests'), 'Group_Update_Remove_Member_Test')), variables('RemoveMemberTestOutputs')['overallResult'], 'SKIPPED')"
+                        "managerTestResult": "@if(and(parameters('IsManagerAttributeSupported'), or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests')), equals(parameters('EnabledTests'), 'User_Update_Manager_Test'))), variables('ManagerTestOutputs')['overallResult'], 'SKIPPED')",
+                        "createGroupTestResult": "@if(and(parameters('IsGroupSupported'), or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Create_Group_Test'))), variables('CreateGroupTestOutputs')['overallResult'], 'SKIPPED')",
+                        "updateGroupTestResult": "@if(and(parameters('IsGroupSupported'), or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Update_Group_Test'))), variables('UpdateGroupTestOutputs')['overallResult'], 'SKIPPED')",
+                        "deleteGroupTestResult": "@if(and(parameters('IsGroupSupported'), or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Delete_Group_Test'))), variables('DeleteGroupTestOutputs')['overallResult'], 'SKIPPED')",
+                        "addMemberTestResult": "@if(and(parameters('IsGroupSupported'), or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests')), equals(parameters('EnabledTests'), 'Group_Update_Add_Member_Test'))), variables('AddMemberTestOutputs')['overallResult'], 'SKIPPED')",
+                        "removeMemberTestResult": "@if(and(parameters('IsGroupSupported'), or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests')), equals(parameters('EnabledTests'), 'Group_Update_Remove_Member_Test'))), variables('RemoveMemberTestOutputs')['overallResult'], 'SKIPPED')"
                     },
                     "overallLogicAppResult": "@if(or(or(or(or(or(or(or(or(or(and(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Create_User_Test')), equals(variables('CreateUserTestOutputs')['overallResult'], 'FAILED')), and(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Update_User_Test')), equals(variables('UpdateUserTestOutputs')['overallResult'], 'FAILED'))), and(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Disable_User_Test')), equals(variables('DisableUserTestOutputs')['overallResult'], 'FAILED'))), and(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Delete_User_Test')), equals(variables('DeleteUserTestOutputs')['overallResult'], 'FAILED'))), and(or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests')), equals(parameters('EnabledTests'), 'User_Update_Manager_Test')), equals(variables('ManagerTestOutputs')['overallResult'], 'FAILED'))), and(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Create_Group_Test')), equals(variables('CreateGroupTestOutputs')['overallResult'], 'FAILED'))), and(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Update_Group_Test')), equals(variables('UpdateGroupTestOutputs')['overallResult'], 'FAILED'))), and(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Delete_Group_Test')), equals(variables('DeleteGroupTestOutputs')['overallResult'], 'FAILED'))), and(or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests')), equals(parameters('EnabledTests'), 'Group_Update_Add_Member_Test')), equals(variables('AddMemberTestOutputs')['overallResult'], 'FAILED'))), and(or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests')), equals(parameters('EnabledTests'), 'Group_Update_Remove_Member_Test')), equals(variables('RemoveMemberTestOutputs')['overallResult'], 'FAILED'))), 'Failed', 'Succeeded')"
                 }
             },
-            "Compose_Final_Results": {
+            "Final_TestResults": {
                 "runAfter": {
                     "Evaluate_Test_Results": [
                         "Succeeded"
@@ -182,7 +196,7 @@
             },
             "Terminate_With_Test_Status": {
                 "runAfter": {
-                    "Compose_Final_Results": [
+                    "Final_TestResults": [
                         "Succeeded"
                     ]
                 },
@@ -702,8 +716,8 @@
                                                     "userPrincipalName": "@{outputs('Generate_Test_UserNames')['updateUser']}",
                                                     "mail": "@{outputs('Generate_Test_UserNames')['updateUser']}",
                                                     "passwordProfile": {
-                                                        "forceChangePasswordNextSignIn": "@parameters('forcePasswordChange')",
-                                                        "password": "@parameters('defaultPassword')"
+                                                        "forceChangePasswordNextSignIn": "@{coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['passwordProfile']['forceChangePasswordNextSignIn'], true)}",
+                                                        "password": "@{if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['passwordProfile']['password']), concat('Tmp!', substring(guid(),0,8), '@', substring(guid(),24,8)), parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['passwordProfile']['password'])}"
                                                     },
                                                     "givenName": "@{if(contains(body('Select_Graph_Property_Names'), 'givenName'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['givenName'], concat('Given', substring(guid(),0,6))), null)}",
                                                     "surname": "@{if(contains(body('Select_Graph_Property_Names'), 'surname'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['surname'], concat('Sur', substring(guid(),0,6))), null)}",
@@ -1343,8 +1357,8 @@
                                                         "userType": "@{if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['userType']), 'Member', parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['userType'])}",
                                                         "employeeOrgData": "@if(or(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['division']), empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['costCenter'])), json(concat('{\"division\":\"', if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['division']), concat('Div', substring(guid(),0,4)), parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['division']), '\",\"costCenter\":\"', if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['costCenter']), substring(guid(),0,5), parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['costCenter']), '\"}')), json(concat('{\"division\":\"', parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['division'], '\",\"costCenter\":\"', parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['costCenter'], '\"}')))",
                                                         "passwordProfile": {
-                                                            "forceChangePasswordNextSignIn": "@parameters('forcePasswordChange')",
-                                                            "password": "@parameters('defaultPassword')"
+                                                            "forceChangePasswordNextSignIn": "@{coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['passwordProfile']['forceChangePasswordNextSignIn'], true)}",
+                                                            "password": "@{if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['passwordProfile']['password']), concat('Tmp!', substring(guid(),0,8), '@', substring(guid(),24,8)), parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['passwordProfile']['password'])}"
                                                         }
                                                     },
                                                     "authentication": {
@@ -2562,7 +2576,7 @@
                                                                 "TimedOut"
                                                             ]
                                                         },
-                                                        "expression": "@and(greater(length(coalesce(body('Verify_Set_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), and(or(empty(first(body('Verify_Set_Manager_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['oldValue']), equals(first(body('Verify_Set_Manager_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['oldValue'], 'null')), equals(first(body('Verify_Set_Manager_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['newValue'], body('SCIM_Query_Initial_Manager')?['id'])))",
+                                                        "expression": "@and(greater(length(coalesce(body('Verify_Set_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), and(or(empty(first(body('Verify_Set_Manager_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['oldValue']), equals(first(body('Verify_Set_Manager_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['oldValue'], 'null')), equals(first(body('Verify_Set_Manager_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['newValue'], first(body('SCIM_Query_Initial_Manager')?['Resources'])?['id'])))",
                                                         "limit": {
                                                             "count": 150,
                                                             "timeout": "PT40M"
@@ -2795,7 +2809,7 @@
                                                                         "TimedOut"
                                                                     ]
                                                                 },
-                                                                "expression": "@and(greater(length(coalesce(body('Verify_Change_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), equals(first(body('Verify_Change_Manager_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['newValue'], body('SCIM_Query_New_Manager')?['id']))",
+                                                                "expression": "@and(greater(length(coalesce(body('Verify_Change_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), equals(first(body('Verify_Change_Manager_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['newValue'], first(body('SCIM_Query_New_Manager')?['Resources'])?['id']))",
                                                                 "limit": {
                                                                     "count": 150,
                                                                     "timeout": "PT40M"
@@ -3025,7 +3039,7 @@
                                                                                 "TimedOut"
                                                                             ]
                                                                         },
-                                                                        "expression": "@and(greater(length(coalesce(body('Verify_Remove_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), and(equals(first(body('Verify_Remove_Manager_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['oldValue'], body('SCIM_Query_New_Manager')?['id']), or(empty(first(body('Verify_Remove_Manager_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['newValue']), equals(first(body('Verify_Remove_Manager_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['newValue'], 'null'))))",
+                                                                        "expression": "@and(greater(length(coalesce(body('Verify_Remove_Manager_Provisioning_Logs')?['value'], json('[]'))), 0), and(equals(first(body('Verify_Remove_Manager_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['oldValue'], first(body('SCIM_Query_New_Manager')?['Resources'])?['id']), or(empty(first(body('Verify_Remove_Manager_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['newValue']), equals(first(body('Verify_Remove_Manager_Provisioning_Logs')?['value'])?['modifiedProperties'][0]?['newValue'], 'null'))))",
                                                                         "limit": {
                                                                             "count": 150,
                                                                             "timeout": "PT40M"
@@ -3234,23 +3248,33 @@
                             "actions": {}
                         },
                         "expression": {
-                            "or": [
+                            "and": [
                                 {
                                     "equals": [
-                                        "@parameters('EnabledTests')",
-                                        "All"
+                                        "@parameters('IsManagerAttributeSupported')",
+                                        true
                                     ]
                                 },
                                 {
-                                    "equals": [
-                                        "@parameters('EnabledTests')",
-                                        "UserTests"
-                                    ]
-                                },
-                                {
-                                    "equals": [
-                                        "@parameters('EnabledTests')",
-                                        "User_Update_Manager_Test"
+                                    "or": [
+                                        {
+                                            "equals": [
+                                                "@parameters('EnabledTests')",
+                                                "All"
+                                            ]
+                                        },
+                                        {
+                                            "equals": [
+                                                "@parameters('EnabledTests')",
+                                                "UserTests"
+                                            ]
+                                        },
+                                        {
+                                            "equals": [
+                                                "@parameters('EnabledTests')",
+                                                "User_Update_Manager_Test"
+                                            ]
+                                        }
                                     ]
                                 }
                             ]
@@ -3316,8 +3340,8 @@
                                                         "userType": "@{if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['userType']), 'Member', parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['userType'])}",
                                                         "employeeOrgData": "@if(or(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['division']), empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['costCenter'])), json(concat('{\"division\":\"', if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['division']), concat('Div', substring(guid(),0,4)), parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['division']), '\",\"costCenter\":\"', if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['costCenter']), substring(guid(),0,5), parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['costCenter']), '\"}')), json(concat('{\"division\":\"', parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['division'], '\",\"costCenter\":\"', parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['costCenter'], '\"}')))",
                                                         "passwordProfile": {
-                                                            "forceChangePasswordNextSignIn": "@parameters('forcePasswordChange')",
-                                                            "password": "@parameters('defaultPassword')"
+                                                            "forceChangePasswordNextSignIn": "@{coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['passwordProfile']['forceChangePasswordNextSignIn'], true)}",
+                                                            "password": "@{if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['passwordProfile']['password']), concat('Tmp!', substring(guid(),0,8), '@', substring(guid(),24,8)), parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['passwordProfile']['password'])}"
                                                         }
                                                     },
                                                     "authentication": {
@@ -4196,23 +4220,33 @@
                             "actions": {}
                         },
                         "expression": {
-                            "or": [
+                            "and": [
                                 {
                                     "equals": [
-                                        "@parameters('EnabledTests')",
-                                        "All"
+                                        "@parameters('IsGroupSupported')",
+                                        true
                                     ]
                                 },
                                 {
-                                    "equals": [
-                                        "@parameters('EnabledTests')",
-                                        "GroupTests"
-                                    ]
-                                },
-                                {
-                                    "equals": [
-                                        "@parameters('EnabledTests')",
-                                        "Create_Group_Test"
+                                    "or": [
+                                        {
+                                            "equals": [
+                                                "@parameters('EnabledTests')",
+                                                "All"
+                                            ]
+                                        },
+                                        {
+                                            "equals": [
+                                                "@parameters('EnabledTests')",
+                                                "GroupTests"
+                                            ]
+                                        },
+                                        {
+                                            "equals": [
+                                                "@parameters('EnabledTests')",
+                                                "Create_Group_Test"
+                                            ]
+                                        }
                                     ]
                                 }
                             ]
@@ -4800,23 +4834,33 @@
                             "actions": {}
                         },
                         "expression": {
-                            "or": [
+                            "and": [
                                 {
                                     "equals": [
-                                        "@parameters('EnabledTests')",
-                                        "All"
+                                        "@parameters('IsGroupSupported')",
+                                        true
                                     ]
                                 },
                                 {
-                                    "equals": [
-                                        "@parameters('EnabledTests')",
-                                        "GroupTests"
-                                    ]
-                                },
-                                {
-                                    "equals": [
-                                        "@parameters('EnabledTests')",
-                                        "Update_Group_Test"
+                                    "or": [
+                                        {
+                                            "equals": [
+                                                "@parameters('EnabledTests')",
+                                                "All"
+                                            ]
+                                        },
+                                        {
+                                            "equals": [
+                                                "@parameters('EnabledTests')",
+                                                "GroupTests"
+                                            ]
+                                        },
+                                        {
+                                            "equals": [
+                                                "@parameters('EnabledTests')",
+                                                "Update_Group_Test"
+                                            ]
+                                        }
                                     ]
                                 }
                             ]
@@ -5374,23 +5418,33 @@
                             "actions": {}
                         },
                         "expression": {
-                            "or": [
+                            "and": [
                                 {
                                     "equals": [
-                                        "@parameters('EnabledTests')",
-                                        "All"
+                                        "@parameters('IsGroupSupported')",
+                                        true
                                     ]
                                 },
                                 {
-                                    "equals": [
-                                        "@parameters('EnabledTests')",
-                                        "GroupTests"
-                                    ]
-                                },
-                                {
-                                    "equals": [
-                                        "@parameters('EnabledTests')",
-                                        "Delete_Group_Test"
+                                    "or": [
+                                        {
+                                            "equals": [
+                                                "@parameters('EnabledTests')",
+                                                "All"
+                                            ]
+                                        },
+                                        {
+                                            "equals": [
+                                                "@parameters('EnabledTests')",
+                                                "GroupTests"
+                                            ]
+                                        },
+                                        {
+                                            "equals": [
+                                                "@parameters('EnabledTests')",
+                                                "Delete_Group_Test"
+                                            ]
+                                        }
                                     ]
                                 }
                             ]
@@ -6102,23 +6156,33 @@
                             "actions": {}
                         },
                         "expression": {
-                            "or": [
+                            "and": [
                                 {
                                     "equals": [
-                                        "@parameters('EnabledTests')",
-                                        "All"
+                                        "@parameters('IsGroupSupported')",
+                                        true
                                     ]
                                 },
                                 {
-                                    "equals": [
-                                        "@parameters('EnabledTests')",
-                                        "GroupTests"
-                                    ]
-                                },
-                                {
-                                    "equals": [
-                                        "@parameters('EnabledTests')",
-                                        "Group_Update_Add_Member_Test"
+                                    "or": [
+                                        {
+                                            "equals": [
+                                                "@parameters('EnabledTests')",
+                                                "All"
+                                            ]
+                                        },
+                                        {
+                                            "equals": [
+                                                "@parameters('EnabledTests')",
+                                                "GroupTests"
+                                            ]
+                                        },
+                                        {
+                                            "equals": [
+                                                "@parameters('EnabledTests')",
+                                                "Group_Update_Add_Member_Test"
+                                            ]
+                                        }
                                     ]
                                 }
                             ]
@@ -6845,23 +6909,33 @@
                             "actions": {}
                         },
                         "expression": {
-                            "or": [
+                            "and": [
                                 {
                                     "equals": [
-                                        "@parameters('EnabledTests')",
-                                        "All"
+                                        "@parameters('IsGroupSupported')",
+                                        true
                                     ]
                                 },
                                 {
-                                    "equals": [
-                                        "@parameters('EnabledTests')",
-                                        "GroupTests"
-                                    ]
-                                },
-                                {
-                                    "equals": [
-                                        "@parameters('EnabledTests')",
-                                        "Group_Update_Remove_Member_Test"
+                                    "or": [
+                                        {
+                                            "equals": [
+                                                "@parameters('EnabledTests')",
+                                                "All"
+                                            ]
+                                        },
+                                        {
+                                            "equals": [
+                                                "@parameters('EnabledTests')",
+                                                "GroupTests"
+                                            ]
+                                        },
+                                        {
+                                            "equals": [
+                                                "@parameters('EnabledTests')",
+                                                "Group_Update_Remove_Member_Test"
+                                            ]
+                                        }
                                     ]
                                 }
                             ]
@@ -7142,7 +7216,7 @@
             },
             "Parse_Templates": {
                 "runAfter": {
-                    "Check_Enabled_Tests": [
+                    "Initialize_Tests": [
                         "Succeeded"
                     ]
                 },
@@ -7218,23 +7292,6 @@
                             }
                         }
                     }
-                }
-            },
-            "Initialize_MappedSources": {
-                "runAfter": {
-                    "Parse_Templates": [
-                        "Succeeded"
-                    ]
-                },
-                "type": "InitializeVariable",
-                "inputs": {
-                    "variables": [
-                        {
-                            "name": "mappedSources",
-                            "type": "Array",
-                            "value": []
-                        }
-                    ]
                 }
             },
             "Process_Template_Mappings": {
@@ -7373,6 +7430,23 @@
                     ]
                 },
                 "type": "Scope"
+            },
+            "Initialize_MappedSources": {
+                "runAfter": {
+                    "Parse_Templates": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "mappedSources",
+                            "type": "Array",
+                            "value": []
+                        }
+                    ]
+                }
             }
         },
         "outputs": {},
@@ -7531,20 +7605,6 @@
                     "description": "Combined default user properties for Microsoft Graph User creation"
                 }
             },
-            "defaultPassword": {
-                "defaultValue": "Pa$$w0rd12345!",
-                "type": "SecureString",
-                "metadata": {
-                    "description": "Default password for test users (must meet complexity requirements)"
-                }
-            },
-            "forcePasswordChange": {
-                "defaultValue": true,
-                "type": "Bool",
-                "metadata": {
-                    "description": "Whether users must change password on first sign-in"
-                }
-            },
             "IsSoftDeleted": {
                 "defaultValue": true,
                 "type": "Bool",
@@ -7557,6 +7617,20 @@
                 "type": "String",
                 "metadata": {
                     "description": "Content-Type header for SCIM API calls"
+                }
+            },
+            "IsGroupSupported": {
+                "defaultValue": true,
+                "type": "Bool",
+                "metadata": {
+                    "description": "If true, Group tests will run. If false, all Group tests will be skipped."
+                }
+            },
+            "IsManagerAttributeSupported": {
+                "defaultValue": true,
+                "type": "Bool",
+                "metadata": {
+                    "description": "If true, manager attribute tests will run. If false, User_Update_Manager_Test will be skipped."
                 }
             },
             "defaultGroupProperties": {
@@ -7590,7 +7664,6 @@
     },
     "parameters": {
         "scimBearerToken": {},
-        "defaultPassword": {},
         "$connections": {
             "type": "Object",
             "value": {}
