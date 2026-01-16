@@ -651,6 +651,9 @@ JSON file.
 
 - **Azure CLI** - Install from <https://aka.ms/installazurecli>
 
+> **Note:** The script uses Azure CLI internally to obtain access tokens
+> for Azure Resource Management (ARM) API calls.
+>
 > **31.1 Login to Azure**
 >
 > Open PowerShell and run:
@@ -660,9 +663,6 @@ JSON file.
 > \# Set the subscription you want to use
 >
 > az account set --subscription "YOUR_SUBSCRIPTION_ID"
->
-> **Note:** The script uses Azure CLI internally to obtain access tokens
-> for Azure Resource Management (ARM) API calls.
 >
 > **31.2 Run the Validation Script**
 >
@@ -681,15 +681,15 @@ JSON file.
 >     -RunId "YOUR_RUN_ID"
 >
 > **Where to find these values:**
->
-> Subscription ID: Azure Portal → Subscriptions → Your Subscription →
-> Copy the ID
->
-> Resource Group / Logic App Name: Azure Portal → Your Logic App →
-> Overview
->
-> Run ID: Azure Portal → Your Logic App → Run History → Copy the Run ID
->
+
+- Subscription ID: Azure Portal → Subscriptions → Your Subscription →
+  Copy the ID
+
+- Resource Group / Logic App Name: Azure Portal → Your Logic App →
+  Overview
+
+- Run ID: Azure Portal → Your Logic App → Run History → Copy the Run ID
+
 > **Optional Parameters:**
 >
 > -SkipActionDetails: Skip fetching action inputs/outputs (faster
@@ -729,30 +729,6 @@ JSON file.
   template)
 
 - All template actions executed (no modifications)
-
-> **Finding Required Parameters**
->
-> **Subscription ID**
-
-1.  Go to **Azure Portal** → **Subscriptions**
-
-2.  Find your subscription and copy the **Subscription ID**
-
-> Alternatively, via command:
->
-> az account show --query id --output tsv
->
-> **Resource Group and Logic App Name:**  
-> Go to Azure Portal → Navigate to your Logic App → View the resource
-> group and Logic App name in the overview.
->
-> **Run ID:**
-
-1.  Go to **Azure Portal** → Your **Logic App** → **Run history**
-
-2.  Click on the run you want to validate
-
-3.  Copy the **Run ID** (format: 08584XXXXX...CUXX)
 
 > **Troubleshooting the Validation Script**
 
@@ -841,91 +817,12 @@ pilot—your insights help us make Microsoft Entra ID better.
 
 ## Script for assigning permissions to your Logic app
 
-\$logicAppManagedId = "" 
-
-\$graphAppId="00000003-0000-0000-c000-000000000000" 
-
-\$roleValue="Directory.ReadWrite.All" 
-
-\$graphSpId = az ad sp list --filter "appId eq '\$graphAppId'" --query
-"\[0\].id" -o tsv  
-
-\$roleId = az ad sp show --id \$graphSpId --query
-"appRoles\[?value=='\$roleValue'\].id" -o tsv 
-
-\$body =
-@{ principalId=\$logicAppManagedId; resourceId=\$graphSpId; appRoleId=\$roleId }
-\| ConvertTo-Json 
-
-az rest --method POST
---uri "https://graph.microsoft.com/v1.0/servicePrincipals/\$logicAppManagedId/appRoleAssignments"
---headers "Content-Type=application/json" --body "\$body" 
-
-\$roleValue="Application.ReadWrite.All" 
-
-\$roleId = az ad sp show --id \$graphSpId --query
-"appRoles\[?value=='\$roleValue'\].id" -o tsv 
-
-\$body =
-@{ principalId=\$logicAppManagedId; resourceId=\$graphSpId; appRoleId=\$roleId }
-\| ConvertTo-Json 
-
-az rest --method POST
---uri "https://graph.microsoft.com/v1.0/servicePrincipals/\$logicAppManagedId/appRoleAssignments"
---headers "Content-Type=application/json" --body "\$body" 
-
-\$roleValue="Synchronization.ReadWrite.All" 
-
-\$roleId = az ad sp show --id \$graphSpId --query
-"appRoles\[?value=='\$roleValue'\].id" -o tsv 
-
-\$body =
-@{ principalId=\$logicAppManagedId; resourceId=\$graphSpId; appRoleId=\$roleId }
-\| ConvertTo-Json 
-
-az rest --method POST
---uri "https://graph.microsoft.com/v1.0/servicePrincipals/\$logicAppManagedId/appRoleAssignments"
---headers "Content-Type=application/json" --body "\$body" 
-
-\$roleValue="AuditLog.Read.All" 
-
-\$roleId = az ad sp show --id \$graphSpId --query
-"appRoles\[?value=='\$roleValue'\].id" -o tsv 
-
-\$body =
-@{ principalId=\$logicAppManagedId; resourceId=\$graphSpId; appRoleId=\$roleId }
-\| ConvertTo-Json 
-
-az rest --method POST
---uri "https://graph.microsoft.com/v1.0/servicePrincipals/\$logicAppManagedId/appRoleAssignments"
---headers "Content-Type=application/json" --body "\$body" 
-
-\$roleValue="User.ReadWrite.All" 
-
-\$roleId = az ad sp show --id \$graphSpId --query
-"appRoles\[?value=='\$roleValue'\].id" -o tsv 
-
-\$body =
-@{ principalId=\$logicAppManagedId; resourceId=\$graphSpId; appRoleId=\$roleId }
-\| ConvertTo-Json 
-
-az rest --method POST
---uri "https://graph.microsoft.com/v1.0/servicePrincipals/\$logicAppManagedId/appRoleAssignments"
---headers "Content-Type=application/json" --body "\$body" 
-
-\$roleValue="Group.ReadWrite.All" 
-
-\$roleId = az ad sp show --id \$graphSpId --query
-"appRoles\[?value=='\$roleValue'\].id" -o tsv 
-
-\$body =
-@{ principalId=\$logicAppManagedId; resourceId=\$graphSpId; appRoleId=\$roleId }
-\| ConvertTo-Json 
-
-az rest --method POST
---uri "https://graph.microsoft.com/v1.0/servicePrincipals/\$logicAppManagedId/appRoleAssignments"
---headers "Content-Type=application/json" --body "\$body" 
+Refer :
+<https://github.com/AzureAD/SCIMReferenceCode/blob/55e7524466df913e426ad06918b3de5676b1ac24/Microsoft.SCIM.LogicAppValidationTemplate/AssignRolesTOManagedIdentity-LogicApps%201.ps1>
 
 ## Script for Logic App Validation
 
-[ValidateLogicAppRun.ps1](https://onedrive.cloud.microsoft/:u:/a@tn9g7bf7/S/IQCGtvVTNyhsQrSAIOgD29foActXLLfZD6PLfKUWfhA6aMY?e=TdwSxy)
+Refer :
+[SCIMReferenceCode/Microsoft.SCIM.LogicAppValidationTemplate/ValidateLogicAppRun.ps1
+at master · AzureAD/SCIMReferenceCode ·
+GitHub](https://github.com/AzureAD/SCIMReferenceCode/blob/master/Microsoft.SCIM.LogicAppValidationTemplate/ValidateLogicAppRun.ps1)
