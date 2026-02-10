@@ -65,11 +65,21 @@ requirements:
     support for requests to onboard new provisioning integrations to the
     Microsoft Entra app gallery
 
+  - Requirements for Client Credentials: An admin portal where a
+    customer can generate a client ID and secret
+
+  - Best practices: Support the ability to rotate secrets and delete old
+    secrets
+
 - Support updating multiple group memberships with a single PATCH
   request
 
 - Support at least 25 requests per second per tenant to ensure that
   users and groups can be provisioned and deprovisioned without delay
+
+- On querying for a nonexistent user with filter query, your server
+  should respond with success and empty results. (on contrast with bad
+  request as we see in some SCIM implementation)
 
 - Your SCIM endpoint does not require features that Microsoft does not
   support today. Examples of features that the non-gallery SCIM app does
@@ -130,6 +140,9 @@ document, you will have completed the following pre-requisites:
     contributor](https://learn.microsoft.com/azure/logic-apps/logic-apps-securing-a-logic-app?tabs=azure-portal)
     role, but more permissions may be required depending on whether you
     also need to create a subscription and resource group.
+
+  - If the Get API call do not have any results, the SCIM server should
+    return 0 results but not a Bad Request.
 
 *<u>Publishing requirements</u>*
 
@@ -226,11 +239,20 @@ style="width:6.5in;height:2.31319in" />
 <img src="./media/image9.png"
 style="width:6.5in;height:2.77778in" />
 
+The schema can be exported by selecting “Review your schema here”. Then
+select “Download” from the open schema editor.
+
+<img src="./media/image10.png"
+style="width:6.5in;height:2.74097in" />
+
+<img src="./media/image11.png"
+style="width:6.5in;height:2.50694in" />
+
 7.  In the **Overview** page, select **Start Provisioning** to start a
     provisioning job. If the provisioning job commences without errors,
     you are ready to move on to the next section.
 
-<img src="./media/image10.png"
+<img src="./media/image12.png"
 style="width:6.5in;height:3.36875in" />
 
 8.  **Optional:** Once you’ve successfully started a provisioning job,
@@ -271,16 +293,16 @@ everything you need to set up a Logic app.
 
 2.  Use the searchbar to navigate to the **Subscriptions** blade.
 
-<img src="./media/image11.png" style="width:6.5in;height:1in" />
+<img src="./media/image13.png" style="width:6.5in;height:1in" />
 
 3.  Select the appropriate Azure subscription and create a resource
     group. This is the subscription and resource group that your Logic
     app will be attached to.
 
-<img src="./media/image12.png"
+<img src="./media/image14.png"
 style="width:6.5in;height:2.10903in" />
 
-<img src="./media/image13.png"
+<img src="./media/image15.png"
 style="width:6.5in;height:3.20833in" />
 
 4.  Use the searchbar to navigate to the **Logic app**s blade.
@@ -292,21 +314,21 @@ style="width:6.5in;height:3.20833in" />
     section](#onboarding-requirements) for more details, under*
     Validation requirements*.*
 
-<img src="./media/image14.png"
+<img src="./media/image16.png"
 style="width:6.5in;height:1.76944in" />
 
-<img src="./media/image15.png"
+<img src="./media/image17.png"
 style="width:6.5in;height:2.6625in" />
 
 6.  Configure the settings of your Logic app as desired. Once you are
     done, click **Review + create**.
 
-<img src="./media/image16.png"
+<img src="./media/image18.png"
 style="width:6.5in;height:5.29444in" />
 
 7.  Once the Logic app finishes deploying, open the Logic app.
 
-<img src="./media/image17.png"
+<img src="./media/image19.png"
 style="width:6.5in;height:2.97708in" />
 
 8.  Download the **logicAppTemplate.json **file from
@@ -321,33 +343,33 @@ style="width:6.5in;height:2.97708in" />
     update with the various test cases that our template will
     automatically run for you.
 
-<img src="./media/image18.png"
+<img src="./media/image20.png"
 style="width:6.50278in;height:3.18082in" />
 
-<img src="./media/image19.png"
+<img src="./media/image21.png"
 style="width:6.5in;height:3.70833in" />
 
 10. Next, we will enable system-assigned managed identity for secure
     resource access. Select **Settings \> Identity**.
 
-<img src="./media/image20.png"
+<img src="./media/image22.png"
 style="width:6.5in;height:4.16806in" />
 
 11. Set the **Status** in the **System assigned** tab to **On**. Select
     **Yes** in the confirmation dialog that pops up.
 
-<img src="./media/image21.png"
+<img src="./media/image23.png"
 style="width:6.5in;height:2.86181in" />
 
 12. Select **Save**.
 
-<img src="./media/image22.png"
+<img src="./media/image24.png"
 style="width:6.5in;height:3.02431in" />
 
 13. Take note of the object ID of the managed identity. You will need
     this object ID for the script that you will run in a few steps.
 
-<img src="./media/image23.png"
+<img src="./media/image25.png"
 style="width:6.5in;height:3.59792in" />
 
 14. Now let’s work on granting the owner role to the Logic app. Select
@@ -356,13 +378,13 @@ style="width:6.5in;height:3.59792in" />
 15. In the **Azure role assignments** page, click on **Add role
     assignment** and select the **Owner** role.
 
-<img src="./media/image24.png"
+<img src="./media/image26.png"
 style="width:6.5in;height:2.28889in" />
 
-<img src="./media/image25.png"
+<img src="./media/image27.png"
 style="width:5.16964in;height:5.3232in" />
 
-<img src="./media/image26.png"
+<img src="./media/image28.png"
 style="width:6.5in;height:1.27083in" />
 
 Once the owner role has been granted to the Logic app, you can now work
@@ -386,18 +408,18 @@ You may choose to use Azure CLI or PowerShell for the following steps.
 
 *<u>How to upload and run a script using Azure Cloud Shell</u>*
 
-<img src="./media/image27.png"
+<img src="./media/image29.png"
 style="width:6.5in;height:1.84653in" />
 
-<img src="./media/image28.png"
+<img src="./media/image30.png"
 style="width:6.5in;height:2.33681in" />
 
-<img src="./media/image29.png"
+<img src="./media/image31.png"
 style="width:6.5in;height:4.56528in" />
 
-<img src="./media/image30.png"
+<img src="./media/image32.png"
 style="width:6.5in;height:2.05764in" />
-<img src="./media/image31.png"
+<img src="./media/image33.png"
 style="width:6.5in;height:2.66181in" />
 
 Once the script successfully runs, you will have assigned all the
@@ -410,35 +432,35 @@ Logic App is divided into separate sections.
 The first section initializes the required steps to run the tests in
 Logic App.
 
-<img src="./media/image32.png"
+<img src="./media/image34.png"
 style="width:2.89624in;height:5.76122in" />
 
 The next section contains the tests. Tests are bundled into user and
 group sections. All the User Tests are in ‘UserTests Scope’ and Group
 tests in ‘GroupTests Scope’.
 
-<img src="./media/image33.png"
+<img src="./media/image35.png"
 style="width:6.5in;height:2.46667in" />
 
-<img src="./media/image34.png"
+<img src="./media/image36.png"
 style="width:6.5in;height:2.45486in" />
 
-<img src="./media/image35.png"
+<img src="./media/image37.png"
 style="width:6.5in;height:2.00694in" />
 
 Each test can be further drilldown by selecting the down arrow and to
 get into details of stages and the actions. Each stage and action can be
 drilled down till the inputs and outputs are displayed for each action.
 
-<img src="./media/image36.png"
+<img src="./media/image38.png"
 style="width:5.57369in;height:6.90721in" />
 
-<img src="./media/image37.png"
+<img src="./media/image39.png"
 style="width:6.5in;height:3.89583in" />
 
 The last section is for post run results evaluation.
 
-<img src="./media/image38.png"
+<img src="./media/image40.png"
 style="width:3.95889in;height:2.5837in" />
 
 # Run: Steps to Run Logic app
@@ -452,7 +474,7 @@ before Run.
 18. The **servicePrincipalId** is the **objectId** of the non-gallery
     SCIM app you created in the [previous section](#_Set_up_your).
 
-<img src="./media/image39.png"
+<img src="./media/image41.png"
 style="width:6.26129in;height:4.12558in" />
 
 19. Enter your SCIM endpoint.
@@ -461,17 +483,17 @@ style="width:6.26129in;height:4.12558in" />
         the scim endpoint here. Even if you have to configure your non
         gallery app with feature flags.
 
-<img src="./media/image40.png"
+<img src="./media/image42.png"
 style="width:6.5in;height:2.79167in" />
 
 20. Enter your SCIM bearer token.
 
-<img src="./media/image41.png"
+<img src="./media/image43.png"
 style="width:5.78206in;height:4.11516in" />
 
 21. Under **templateId**, enter **scim** as the **Default value**.
 
-<img src="./media/image42.png"
+<img src="./media/image44.png"
 style="width:5.71955in;height:3.45882in" />
 
 22. Under **testUserDomain**, enter a verified domain that belongs to
@@ -486,7 +508,7 @@ style="width:5.71955in;height:3.45882in" />
     or if you choose to interrupt the Logic app template before it has
     the chance to complete delete operations.*
 
-<img src="./media/image43.png"
+<img src="./media/image45.png"
 style="width:6.18784in;height:2.73981in" />
 
 23. Under defaultUserProperties give the different sets of user
@@ -494,10 +516,10 @@ style="width:6.18784in;height:2.73981in" />
     the defaultUserProperties to create User and another set for
     updating User. Selection is random based on no. of sets.
 
-<img src="./media/image44.png"
+<img src="./media/image46.png"
 style="width:6.19878in;height:4.03181in" />
 
-<img src="./media/image45.png"
+<img src="./media/image47.png"
 style="width:4.6875in;height:6.5in" />
 
 **  **
@@ -541,17 +563,18 @@ skipped.
 
                     "Group_Update_Remove_Member_Test"
 
-<img src="./media/image46.png"
+<img src="./media/image48.png"
 style="width:5.99994in;height:4.23525in" />
 
 25. IsSoftDeleted can be ‘true’ or ‘false’. Set to true only if soft
     deletion is supported and defined in your SCIM schema. This property
     indicates that the user resource is marked for soft deletion—meaning
     it is flagged for removal but not permanently deleted.
-    “Disable_User_Tests’ and “Delete_User_Tests” are dependent on the
-    correct value of this parameter.
+    “Disable_User_Test’ and “Delete_User_Test” are dependent on the
+    correct value of this parameter. If ‘IsSoftDeleted’ is false, then
+    “Disable_User_Test” will be skipped.
 
-<img src="./media/image47.png"
+<img src="./media/image49.png"
 style="width:5.98in;height:3.14627in" />
 
 26. IsManagerAttributeSupported is set to ‘true’ or ‘false’. If the
@@ -560,14 +583,14 @@ style="width:5.98in;height:3.14627in" />
     “User_Update_Manager_Test’ will be skipped. Setting the value and
     skipping the tests will help in the tests to run successfully.
 
-> <img src="./media/image48.png"
+> <img src="./media/image50.png"
 > style="width:5.94875in;height:3.47965in" />
 
 27. IsGroupSupported is set ‘true’ or ‘false’. Only if Group Sync is
     supported set this parameter value to ‘true’. The Group Tests will
     run only if this parameter is set to ‘true’ else they are skipped.
 
-<img src="./media/image49.png"
+<img src="./media/image51.png"
 style="width:5.93833in;height:3.19836in" />
 
 ## Run the Logic App:
@@ -575,10 +598,10 @@ style="width:5.93833in;height:3.19836in" />
 28. You’re now ready to run the Logic app! Navigate to **Development
     Tools \> Logic app designer**, then select **Run**.
 
-<img src="./media/image50.png"
+<img src="./media/image52.png"
 style="width:6.5in;height:3.30764in" />
 
-# Post-Run: Verify the Runs and the Results
+# Post-Run: Verify the Runs and the next steps
 
 ## Verify the Runs
 
@@ -587,7 +610,7 @@ style="width:6.5in;height:3.30764in" />
     results of that entry, including the list of tests that were run,
     alongside status and any errors that may have come up.
 
-<img src="./media/image51.png"
+<img src="./media/image53.png"
 style="width:6.5in;height:1.42639in" />
 
 ## Debugging
@@ -597,24 +620,25 @@ style="width:6.5in;height:1.42639in" />
 Check the Final_TestResults action to learn about the tests and their
 results.
 
-<img src="./media/image52.png"
+<img src="./media/image54.png"
 style="width:6.5in;height:2.60764in" />
 
 In Final_TestResults -\> Select 'Show raw Outputs’.
 
-<img src="./media/image53.png"
+<img src="./media/image55.png"
 style="width:5.61111in;height:5.53819in" />
 
-<img src="./media/image54.png"
+<img src="./media/image56.png"
 style="width:5.61806in;height:0.94236in" />
 
 For each test, “testResult” shows the success / failure / skipped. In
 case of failure the phase and action name for the failure is displayed.
 Search the action name and can debug and look furthermore for error
-details. Identify the failures from failed actions inputs/outputs give
-further details about why that call is failed. Verify if the schema is
-valid and all the parameters are set according to the Schema. Fix the
-parameters or schema and run the logic app again.
+details. Tip section below shows how to debug further and search for
+specific actions. Identify the failures from failed actions
+inputs/outputs give further details about why that call is failed.
+Verify if the schema is valid and all the parameters are set according
+to the Schema. Fix the parameters or schema and run the logic app again.
 
 “provisioningErrorDetails” gives the glimpse of Error information in
 case of failure.
@@ -623,19 +647,19 @@ case of failure.
 test definition and checking the input/output. Here’s a sample of how
 the output may look like:
 
-<img src="./media/image55.png"
+<img src="./media/image57.png"
 style="width:6.5in;height:1.76458in" />
 
-*Another tip:* In the **Logic app designer** view, you can query for a
-specific stage / action on the magnifying glass icon.
+*Another tip:* Go to the run you want to debug further. In the left you
+can query for a specific stage / action on the magnifying glass icon.
 
-<img src="./media/image56.png"
+<img src="./media/image58.png"
 style="width:6.5in;height:3.65625in" />
 
 ## Test Results
 
 31. Once you see the tests have passed and you are ready to move to
-    onboarding. Provide the test results to us to validate and onboard.
+    onboarding. Provide the test results for us to validate and onboard.
 
 Run the Powershell validation script and provide us with the generated
 JSON file.
@@ -798,6 +822,135 @@ provisioning integration to the Microsoft Entra app gallery. You will be
 given access to this experience when it releases to Private Preview in
 CY2026.
 
+## Next Steps after successful run:
+
+Provide us the following information.
+
+1.  Generated Logic App test results as described in [Test
+    Results](#test-results) section.
+
+2.  \[Required only if your run was done on Logic app template published
+    before 02/09\] Export Pruned Schema as mentioned in Logic App setup
+    instructions or as mentioned in [Export Application Provisioning
+    configuration and roll back to a known good state for disaster
+    recovery in Microsoft Entra ID - Microsoft Entra ID \| Microsoft
+    Learn](https://learn.microsoft.com/en-us/entra/identity/app-provisioning/export-import-provisioning-configuration#export-your-provisioning-configuration)
+
+3.  Since this is a pilot, we would like to run the tests ourselves as a
+    sanity check. This step will not be required once we build an
+    end-to-end experience. For this, we will need the SCIM endpoint and
+    a long-lived bearer token. Please also let us know if there are any
+    constraints (for example, a required domain for the
+    userPrincipalName)
+
+# Frequently Asked Questions: 
+
+Note: Below are some of the known issues and most probable explanations.
+Each issue could be caused by many other reasons too.
+
+1.  **Why do errors occur when the aadOptscim062020 feature flag is used
+    with a Logic App SCIM endpoint?**
+
+**Explanation  **
+The aadOptscim062020 feature flag is supported only for Microsoft Entra
+ID provisioning scenarios. This flag is not required in logic app
+configuration. When it is configured on a Logic App SCIM endpoint, SCIM
+GET requests may fail with Bad Request errors.
+
+**Resolution  **
+Remove the aadOptscim062020 flag from the Logic App SCIM endpoint
+configuration.  
+Configure this flag only while setting up connection in non gallery app
+by going to:
+
+Microsoft Entra ID → Enterprise Application → Provisioning → Tenant URL
+
+2.  **Why do Logic App test runs fail intermittently due to
+    authentication issues?**
+
+**Explanation  **
+Logic App test runs can exceed the lifetime of short-lived access
+tokens. When a token expires during execution, authentication failures
+may occur.
+
+**Resolution  **
+Use long-lived access tokens when running Logic App tests.
+
+3.  **Why does the Get_Templates action return an Unauthorized error?**
+
+**Explanation  **
+The Logic App’s Managed Identity does not have sufficient permissions to
+access the required template resources.
+
+**Resolution  **
+Assign the appropriate roles to the Managed Identity and allow time for
+permission changes to take effect.  
+If the issue continues, recreate the Logic App and reconfigure the
+Managed Identity and permissions.
+
+4.  **Why do SCIM requests with attribute-based filters fail?**
+
+**Explanation  **
+Microsoft Entra ID can issue SCIM GET requests with filters on **any
+attribute configured as a matching property**. When such a request is
+sent, the target SCIM endpoint is expected to support filtering on that
+matching property.
+
+If the SCIM server does not support filtering on one or more matching
+properties configured in Entra ID, the filtered request may fail and
+appear as an error in provisioning logs.
+
+**Resolution  **
+Ensure that the SCIM endpoint supports filtered GET requests for **all
+attributes configured as matching properties** in:
+
+Enterprise Application → Provisioning → Attribute Mappings
+
+**Examples**
+
+- **Email as a matching property**  
+  If emails\[type eq "work"\].value is configured as a matching
+  property, the SCIM endpoint must support filtering on this attribute.
+  The following example API call **must be supported**:
+
+> GET /scim/v2/Users?filter=emails\[type eq "work"\].value eq
+> "user@contoso.com"
+
+5.  **Why do Logic App tests fail with a SCIM 409 Conflict error?**
+
+**Possible Explanation  **
+In some scenarios, the SCIM service may not respond as expected to
+update requests, which can result in retry attempts and a 409 Conflict
+error.
+
+**Resolution  **
+Re-run the test to confirm whether the issue is transient.  
+If the issue occurs consistently, verify that the SCIM service responds
+correctly to update requests and does not introduce response delays.
+
+6.  **Why does a Logic App SCIM GET API call fail when querying a
+    nonexistent user?**
+
+**Explanation**  
+The SCIM specification allows a server to return a 404 Not Found
+response when a queried user does not exist. Although this behavior is
+SCIM compliant, it is not supported by this system.
+
+This system requires SCIM servers to return a **successful response (200
+OK) with zero results** for filter-based queries that do not match any
+users. If a SCIM server returns a 404 Not Found response for a
+nonexistent user, the Logic App SCIM GET call fails due to
+incompatibility with the expected response behavior.
+
+**Resolution**  
+As part of onboarding, ensure that the SCIM endpoint is configured to
+return a **200 OK response with zero results** (for example,
+totalResults: 0 and an empty Resources array) when a queried user does
+not exist.
+
+This behavior is a **mandatory onboarding requirement** and is validated
+during the onboarding checklist process.
+
 # Provide feedback
 
 Once you get a chance to test the pilot, please fill out the following
@@ -817,12 +970,12 @@ pilot—your insights help us make Microsoft Entra ID better.
 
 ## Script for assigning permissions to your Logic app
 
-Refer :
-<https://github.com/AzureAD/SCIMReferenceCode/blob/55e7524466df913e426ad06918b3de5676b1ac24/Microsoft.SCIM.LogicAppValidationTemplate/AssignRolesTOManagedIdentity-LogicApps%201.ps1>
+[SCIMReferenceCode/Microsoft.SCIM.LogicAppValidationTemplate/AssignRolesTOManagedIdentity-LogicApps
+1.ps1 at master · AzureAD/SCIMReferenceCode ·
+GitHub](https://github.com/AzureAD/SCIMReferenceCode/blob/master/Microsoft.SCIM.LogicAppValidationTemplate/AssignRolesTOManagedIdentity-LogicApps%201.ps1)
 
 ## Script for Logic App Validation
 
-Refer :
 [SCIMReferenceCode/Microsoft.SCIM.LogicAppValidationTemplate/ValidateLogicAppRun.ps1
 at master · AzureAD/SCIMReferenceCode ·
 GitHub](https://github.com/AzureAD/SCIMReferenceCode/blob/master/Microsoft.SCIM.LogicAppValidationTemplate/ValidateLogicAppRun.ps1)
