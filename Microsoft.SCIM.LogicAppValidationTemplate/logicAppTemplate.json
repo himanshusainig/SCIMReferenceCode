@@ -18,23 +18,8 @@
         "actions": {
             "Initialize_Tests": {
                 "actions": {
-                    "Get_Templates": {
-                        "type": "Http",
-                        "inputs": {
-                            "uri": "https://graph.microsoft.com/beta/servicePrincipals/@{parameters('servicePrincipalId')}/synchronization/templates",
-                            "method": "GET",
-                            "authentication": {
-                                "type": "ManagedServiceIdentity",
-                                "audience": "https://graph.microsoft.com/"
-                            }
-                        }
-                    },
                     "List_Existing_Jobs": {
-                        "runAfter": {
-                            "Get_Templates": [
-                                "Succeeded"
-                            ]
-                        },
+                        "runAfter": {},
                         "type": "Http",
                         "inputs": {
                             "uri": "https://graph.microsoft.com/beta/servicePrincipals/@{parameters('servicePrincipalId')}/synchronization/jobs",
@@ -71,16 +56,32 @@
                             }
                         }
                     },
-                    "Compose_Job_Settings_And_Templates": {
+                    "Get_Schema": {
                         "runAfter": {
                             "Get_Job_Details": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "Http",
+                        "inputs": {
+                            "uri": "https://graph.microsoft.com/beta/servicePrincipals/@{parameters('servicePrincipalId')}/synchronization/jobs/@{outputs('Compose_SyncJobId')}/schema",
+                            "method": "GET",
+                            "authentication": {
+                                "type": "ManagedServiceIdentity",
+                                "audience": "https://graph.microsoft.com/"
+                            }
+                        }
+                    },
+                    "Compose_Job_Settings_And_Templates": {
+                        "runAfter": {
+                            "Get_Schema": [
                                 "Succeeded"
                             ]
                         },
                         "type": "Compose",
                         "inputs": {
                             "jobSettings": "@body('Get_Job_Details')",
-                            "templates": "@body('Get_Templates')"
+                            "schema": "@body('Get_Schema')"
                         }
                     },
                     "Get_App_Roles": {
@@ -97,6 +98,18 @@
                                 "type": "ManagedServiceIdentity",
                                 "audience": "https://graph.microsoft.com/"
                             }
+                        }
+                    },
+                    "Filter_User_AppRole": {
+                        "runAfter": {
+                            "Get_App_Roles": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "Query",
+                        "inputs": {
+                            "from": "@body('Get_App_Roles')?['appRoles']",
+                            "where": "@equals(toLower(item()?['displayName']), 'user')"
                         }
                     },
                     "Generate_TestNames": {
@@ -131,7 +144,7 @@
                             }
                         },
                         "runAfter": {
-                            "Get_App_Roles": [
+                            "Filter_User_AppRole": [
                                 "Succeeded"
                             ]
                         },
@@ -162,7 +175,7 @@
                         "createUserTestEnabled": "@or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Create_User_Test'))",
                         "createGroupTestEnabled": "@and(parameters('IsGroupSupported'), or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Create_Group_Test')))",
                         "updateUserTestEnabled": "@or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Update_User_Test'))",
-                        "disableUserTestEnabled": "@or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Disable_User_Test'))",
+                        "disableUserTestEnabled": "@and(parameters('IsSoftDeleted'), or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Disable_User_Test')))",
                         "deleteUserTestEnabled": "@or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Delete_User_Test'))",
                         "managerTestEnabled": "@and(parameters('IsManagerAttributeSupported'), or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests')), equals(parameters('EnabledTests'), 'User_Update_Manager_Test')))",
                         "updateGroupTestEnabled": "@and(parameters('IsGroupSupported'), or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Update_Group_Test')))",
@@ -173,7 +186,7 @@
                     "testResults": {
                         "createUserTestResult": "@if(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Create_User_Test')), variables('CreateUserTestOutputs')['overallResult'], 'SKIPPED')",
                         "updateUserTestResult": "@if(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Update_User_Test')), variables('UpdateUserTestOutputs')['overallResult'], 'SKIPPED')",
-                        "disableUserTestResult": "@if(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Disable_User_Test')), variables('DisableUserTestOutputs')['overallResult'], 'SKIPPED')",
+                        "disableUserTestResult": "@if(and(parameters('IsSoftDeleted'), or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Disable_User_Test'))), variables('DisableUserTestOutputs')['overallResult'], 'SKIPPED')",
                         "deleteUserTestResult": "@if(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests'), equals(parameters('EnabledTests'), 'Delete_User_Test')), variables('DeleteUserTestOutputs')['overallResult'], 'SKIPPED')",
                         "managerTestResult": "@if(and(parameters('IsManagerAttributeSupported'), or(or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'UserTests')), equals(parameters('EnabledTests'), 'User_Update_Manager_Test'))), variables('ManagerTestOutputs')['overallResult'], 'SKIPPED')",
                         "createGroupTestResult": "@if(and(parameters('IsGroupSupported'), or(equals(parameters('EnabledTests'), 'All'), equals(parameters('EnabledTests'), 'GroupTests'), equals(parameters('EnabledTests'), 'Create_Group_Test'))), variables('CreateGroupTestOutputs')['overallResult'], 'SKIPPED')",
@@ -245,7 +258,7 @@
                                                 "jobTitle": "@{if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['jobTitle']), concat('Title', substring(guid(),0,6)), parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['jobTitle'])}",
                                                 "department": "@{if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['department']), concat('Dept', substring(guid(),0,6)), parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['department'])}",
                                                 "companyName": "@{if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['companyName']), concat('Company', substring(guid(),0,6)), parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['companyName'])}",
-                                                "businessPhones": "@coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['businessPhones'], json(concat('[\"+ 1-555-', substring(guid(),0,4), '\"]')))",
+                                                "businessPhones": "@if(greater(length(coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['businessPhones'], json('[]'))), 0), parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['businessPhones'], json(concat('[\"+ 1-555-', substring(guid(),0,4), '\"]')))",
                                                 "mobilePhone": "@{if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['mobilePhone']), concat('+1-555-', substring(guid(),0,4)), parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['mobilePhone'])}",
                                                 "officeLocation": "@{if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['officeLocation']), concat('Office', substring(guid(),0,4)), parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['officeLocation'])}",
                                                 "preferredLanguage": "@{if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['preferredLanguage']), 'en-US', parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['preferredLanguage'])}",
@@ -257,7 +270,7 @@
                                                 "country": "@{if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['country']), 'US', parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['country'])}",
                                                 "postalCode": "@{if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['postalCode']), substring(guid(),0,5), parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['postalCode'])}",
                                                 "usageLocation": "@{if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['usageLocation']), 'US', parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['usageLocation'])}",
-                                                "otherMails": "@coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['otherMails'], json(concat('[\"', substring(guid(),0,8), '@example.com\"]')))",
+                                                "otherMails": "@if(greater(length(coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['otherMails'], json('[]'))), 0), parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['otherMails'], json('[]'))",
                                                 "mail": "@{outputs('Generate_Test_UserNames')['createUser']}",
                                                 "faxNumber": "@{if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['faxNumber']), concat('+1-555-', substring(guid(),0,4)), parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['faxNumber'])}",
                                                 "userType": "@{if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['userType']), 'Member', parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['userType'])}",
@@ -289,7 +302,7 @@
                                             "body": {
                                                 "principalId": "@{body('Create_User_Graph')?['id']}",
                                                 "resourceId": "@{parameters('servicePrincipalId')}",
-                                                "appRoleId": "@{first(body('Get_App_Roles')?['appRoles'])?['id']}"
+                                                "appRoleId": "@{coalesce(first(body('Filter_User_AppRole'))?['id'], first(body('Get_App_Roles')?['appRoles'])?['id'])}"
                                             },
                                             "authentication": {
                                                 "type": "ManagedServiceIdentity",
@@ -714,32 +727,32 @@
                                                     "displayName": "@{outputs('Generate_Test_UserNames')['updateUser']}",
                                                     "mailNickname": "@{replace(first(split(outputs('Generate_Test_UserNames')['updateUser'],'@')),'.','')}",
                                                     "userPrincipalName": "@{outputs('Generate_Test_UserNames')['updateUser']}",
-                                                    "mail": "@{outputs('Generate_Test_UserNames')['updateUser']}",
+                                                    "mail": "@{if(contains(outputs('Select_Graph_Property_Names'), 'mail'), outputs('Generate_Test_UserNames')['updateUser'], null)}",
                                                     "passwordProfile": {
                                                         "forceChangePasswordNextSignIn": "@{coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['passwordProfile']['forceChangePasswordNextSignIn'], true)}",
                                                         "password": "@{if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['passwordProfile']['password']), concat('Tmp!', substring(guid(),0,8), '@', substring(guid(),24,8)), parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['passwordProfile']['password'])}"
                                                     },
-                                                    "givenName": "@{if(contains(body('Select_Graph_Property_Names'), 'givenName'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['givenName'], concat('Given', substring(guid(),0,6))), null)}",
-                                                    "surname": "@{if(contains(body('Select_Graph_Property_Names'), 'surname'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['surname'], concat('Sur', substring(guid(),0,6))), null)}",
-                                                    "jobTitle": "@{if(contains(body('Select_Graph_Property_Names'), 'jobTitle'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['jobTitle'], concat('Title', substring(guid(),0,6))), null)}",
-                                                    "department": "@{if(contains(body('Select_Graph_Property_Names'), 'department'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['department'], concat('Dept', substring(guid(),0,6))), null)}",
-                                                    "companyName": "@{if(contains(body('Select_Graph_Property_Names'), 'companyName'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['companyName'], concat('Company', substring(guid(),0,6))), null)}",
-                                                    "businessPhones": "@{if(contains(body('Select_Graph_Property_Names'), 'businessPhones'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['businessPhones'], json(concat('[\"+ 1-555-', substring(guid(),0,4), '\"]'))), null)}",
-                                                    "mobilePhone": "@{if(contains(body('Select_Graph_Property_Names'), 'mobilePhone'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['mobilePhone'], concat('+1-555-', substring(guid(),0,4))), null)}",
-                                                    "officeLocation": "@{if(contains(body('Select_Graph_Property_Names'), 'officeLocation'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['officeLocation'], concat('Office', substring(guid(),0,4))), null)}",
-                                                    "preferredLanguage": "@{if(contains(body('Select_Graph_Property_Names'), 'preferredLanguage'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['preferredLanguage'], 'en-US'), null)}",
-                                                    "employeeId": "@{if(contains(body('Select_Graph_Property_Names'), 'employeeId'), substring(guid(), 0, 8), null)}",
-                                                    "employeeType": "@{if(contains(body('Select_Graph_Property_Names'), 'employeeType'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeType'], 'Employee'), null)}",
-                                                    "streetAddress": "@{if(contains(body('Select_Graph_Property_Names'), 'streetAddress'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['streetAddress'], concat('Street', substring(guid(),0,4))), null)}",
-                                                    "city": "@{if(contains(body('Select_Graph_Property_Names'), 'city'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['city'], concat('City', substring(guid(),0,4))), null)}",
-                                                    "state": "@{if(contains(body('Select_Graph_Property_Names'), 'state'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['state'], 'WA'), null)}",
-                                                    "country": "@{if(contains(body('Select_Graph_Property_Names'), 'country'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['country'], 'US'), null)}",
-                                                    "postalCode": "@{if(contains(body('Select_Graph_Property_Names'), 'postalCode'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['postalCode'], substring(guid(),0,5)), null)}",
-                                                    "usageLocation": "@{if(contains(body('Select_Graph_Property_Names'), 'usageLocation'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['usageLocation'], 'US'), null)}",
-                                                    "otherMails": "@{if(contains(body('Select_Graph_Property_Names'), 'otherMails'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['otherMails'], json(concat('[\"', substring(guid(),0,8), '@example.com\"]'))), null)}",
-                                                    "faxNumber": "@{if(contains(body('Select_Graph_Property_Names'), 'faxNumber'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['faxNumber'], concat('+1-555-', substring(guid(),0,4))), null)}",
-                                                    "userType": "@{if(contains(body('Select_Graph_Property_Names'), 'userType'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['userType'], 'Member'), null)}",
-                                                    "employeeOrgData": "@{if(or(contains(body('Select_Graph_Property_Names'), 'division'), contains(body('Select_Graph_Property_Names'), 'costCenter')), if(or(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['division']), empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['costCenter'])), json(concat('{\"division\":\"', if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['division']), concat('Div', substring(guid(),0,4)), parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['division']), '\",\"costCenter\":\"', if(empty(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['costCenter']), substring(guid(),0,5), parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['costCenter']), '\"}')), json(concat('{\"division\":\"', parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['division'], '\",\"costCenter\":\"', parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['costCenter'], '\"}'))), null)}"
+                                                    "givenName": "@{if(contains(outputs('Select_Graph_Property_Names'), 'givenName'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['givenName'], concat('Given', substring(guid(),0,6))), null)}",
+                                                    "surname": "@{if(contains(outputs('Select_Graph_Property_Names'), 'surname'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['surname'], concat('Sur', substring(guid(),0,6))), null)}",
+                                                    "jobTitle": "@{if(contains(outputs('Select_Graph_Property_Names'), 'jobTitle'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['jobTitle'], concat('Title', substring(guid(),0,6))), null)}",
+                                                    "department": "@{if(contains(outputs('Select_Graph_Property_Names'), 'department'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['department'], concat('Dept', substring(guid(),0,6))), null)}",
+                                                    "companyName": "@{if(contains(outputs('Select_Graph_Property_Names'), 'companyName'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['companyName'], concat('Company', substring(guid(),0,6))), null)}",
+                                                    "businessPhones": "@if(contains(outputs('Select_Graph_Property_Names'), 'businessPhones'), if(greater(length(coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['businessPhones'], json('[]'))), 0), parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['businessPhones'], json(concat('[\"+ 1-555-', substring(guid(),0,4), '\"]'))), null)",
+                                                    "mobilePhone": "@{if(contains(outputs('Select_Graph_Property_Names'), 'mobilePhone'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['mobilePhone'], concat('+1-555-', substring(guid(),0,4))), null)}",
+                                                    "officeLocation": "@{if(contains(outputs('Select_Graph_Property_Names'), 'officeLocation'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['officeLocation'], concat('Office', substring(guid(),0,4))), null)}",
+                                                    "preferredLanguage": "@{if(contains(outputs('Select_Graph_Property_Names'), 'preferredLanguage'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['preferredLanguage'], 'en-US'), null)}",
+                                                    "employeeId": "@{if(contains(outputs('Select_Graph_Property_Names'), 'employeeId'), substring(guid(), 0, 8), null)}",
+                                                    "employeeType": "@{if(contains(outputs('Select_Graph_Property_Names'), 'employeeType'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeType'], 'Employee'), null)}",
+                                                    "streetAddress": "@{if(contains(outputs('Select_Graph_Property_Names'), 'streetAddress'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['streetAddress'], concat('Street', substring(guid(),0,4))), null)}",
+                                                    "city": "@{if(contains(outputs('Select_Graph_Property_Names'), 'city'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['city'], concat('City', substring(guid(),0,4))), null)}",
+                                                    "state": "@{if(contains(outputs('Select_Graph_Property_Names'), 'state'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['state'], 'WA'), null)}",
+                                                    "country": "@{if(contains(outputs('Select_Graph_Property_Names'), 'country'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['country'], 'US'), null)}",
+                                                    "postalCode": "@{if(contains(outputs('Select_Graph_Property_Names'), 'postalCode'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['postalCode'], substring(guid(),0,5)), null)}",
+                                                    "usageLocation": "@{if(contains(outputs('Select_Graph_Property_Names'), 'usageLocation'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['usageLocation'], 'US'), null)}",
+                                                    "otherMails": "@if(contains(outputs('Select_Graph_Property_Names'), 'otherMails'), if(greater(length(coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['otherMails'], json('[]'))), 0), parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['otherMails'], null), null)",
+                                                    "faxNumber": "@{if(contains(outputs('Select_Graph_Property_Names'), 'faxNumber'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['faxNumber'], concat('+1-555-', substring(guid(),0,4))), null)}",
+                                                    "userType": "@{if(contains(outputs('Select_Graph_Property_Names'), 'userType'), coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['userType'], 'Member'), null)}",
+                                                    "employeeOrgData": "@if(and(not(contains(outputs('Select_Graph_Property_Names'), 'employeeOrgData.division')), not(contains(outputs('Select_Graph_Property_Names'), 'employeeOrgData.costCenter'))), null, json(concat('{', if(contains(outputs('Select_Graph_Property_Names'), 'employeeOrgData.division'), concat('\"division\":\"', coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['division'], concat('Div', substring(guid(),0,4))), '\"'), ''), if(and(contains(outputs('Select_Graph_Property_Names'), 'employeeOrgData.division'), contains(outputs('Select_Graph_Property_Names'), 'employeeOrgData.costCenter')), ',', ''), if(contains(outputs('Select_Graph_Property_Names'), 'employeeOrgData.costCenter'), concat('\"costCenter\":\"', coalesce(parameters('defaultUserProperties')[outputs('Generate_Test_UserNames')['index']]['employeeOrgData']['costCenter'], substring(guid(),0,5)), '\"'), ''), '}')))"
                                                 }
                                             },
                                             "Compose_Final_User_Body": {
@@ -826,7 +839,7 @@
                                                             "Update_User_-_Query_User_By_Id_After_Attributes_Update": {
                                                                 "type": "Http",
                                                                 "inputs": {
-                                                                    "uri": "@concat(parameters('scimEndpoint'), '/Users?filter=userName%20eq%20%22', coalesce(outputs('Generate_Test_UserNames')?['updateUser'], ''), '%22')",
+                                                                    "uri": "@concat(parameters('scimEndpoint'), '/Users/', coalesce(first(body('Update_User_Query_User_By_Id')?['Resources'])?['id'], ''))",
                                                                     "method": "GET",
                                                                     "headers": {
                                                                         "Authorization": "@{concat('Bearer ', parameters('scimBearerToken'))}",
@@ -855,7 +868,7 @@
                                                                 "Succeeded"
                                                             ]
                                                         },
-                                                        "expression": "@and(greater(length(coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'], json('[]'))), 0), equals(coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['name']?['givenName'], ''), coalesce(outputs('Compose_Final_Update_User_Body')?['givenName'], '')))",
+                                                        "expression": "@and(not(empty(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['id'])), equals(coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['name']?['givenName'], ''), coalesce(outputs('Compose_Final_Update_User_Body')?['givenName'], '')))",
                                                         "limit": {
                                                             "count": 150,
                                                             "timeout": "PT40M"
@@ -872,58 +885,73 @@
                                                         },
                                                         "type": "Compose",
                                                         "inputs": {
+                                                            "expectedUserPrincipalName": "@coalesce(outputs('Compose_Final_Update_User_Body')?['userPrincipalName'], '')",
+                                                            "actualUserPrincipalName": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['userName'], '')",
                                                             "expectedDisplayName": "@coalesce(outputs('Compose_Final_Update_User_Body')?['displayName'], '')",
-                                                            "actualDisplayName": "@coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['displayName'], '')",
+                                                            "actualDisplayName": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['displayName'], '')",
                                                             "expectedGivenName": "@coalesce(outputs('Compose_Final_Update_User_Body')?['givenName'], '')",
-                                                            "actualGivenName": "@coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['name']?['givenName'], '')",
+                                                            "actualGivenName": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['name']?['givenName'], '')",
                                                             "expectedSurname": "@coalesce(outputs('Compose_Final_Update_User_Body')?['surname'], '')",
-                                                            "actualSurname": "@coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['name']?['familyName'], '')",
+                                                            "actualSurname": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['name']?['familyName'], '')",
                                                             "expectedJobTitle": "@coalesce(outputs('Compose_Final_Update_User_Body')?['jobTitle'], '')",
-                                                            "actualJobTitle": "@coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['title'], '')",
+                                                            "actualJobTitle": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['title'], '')",
                                                             "expectedDepartment": "@coalesce(outputs('Compose_Final_Update_User_Body')?['department'], '')",
-                                                            "actualDepartment": "@coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['department'], '')",
+                                                            "actualDepartment": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['department'], '')",
                                                             "expectedCompanyName": "@coalesce(outputs('Compose_Final_Update_User_Body')?['companyName'], '')",
-                                                            "actualCompanyName": "@coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['organization'], '')",
+                                                            "actualCompanyName": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['organization'], '')",
                                                             "expectedOfficeLocation": "@coalesce(outputs('Compose_Final_Update_User_Body')?['officeLocation'], '')",
-                                                            "actualOfficeLocation": "@coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['officeLocation'], '')",
+                                                            "actualOfficeLocation": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['officeLocation'], '')",
                                                             "expectedPreferredLanguage": "@coalesce(outputs('Compose_Final_Update_User_Body')?['preferredLanguage'], '')",
-                                                            "actualPreferredLanguage": "@coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['preferredLanguage'], '')",
+                                                            "actualPreferredLanguage": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['preferredLanguage'], '')",
                                                             "expectedEmployeeType": "@coalesce(outputs('Compose_Final_Update_User_Body')?['employeeType'], '')",
-                                                            "actualEmployeeType": "@coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['employeeType'], '')",
+                                                            "actualEmployeeType": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['employeeType'], '')",
                                                             "expectedUsageLocation": "@coalesce(outputs('Compose_Final_Update_User_Body')?['usageLocation'], '')",
-                                                            "actualUsageLocation": "@coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['usageLocation'], '')",
+                                                            "actualUsageLocation": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['usageLocation'], '')",
                                                             "expectedCountry": "@coalesce(outputs('Compose_Final_Update_User_Body')?['country'], '')",
-                                                            "actualCountry": "@coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['addresses']?[0]?['country'], '')",
+                                                            "actualCountry": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['addresses']?[0]?['country'], '')",
                                                             "expectedStreetAddress": "@coalesce(outputs('Compose_Final_Update_User_Body')?['streetAddress'], '')",
-                                                            "actualStreetAddress": "@coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['addresses']?[0]?['streetAddress'], '')",
+                                                            "actualStreetAddress": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['addresses']?[0]?['streetAddress'], '')",
                                                             "expectedCity": "@coalesce(outputs('Compose_Final_Update_User_Body')?['city'], '')",
-                                                            "actualCity": "@coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['addresses']?[0]?['locality'], '')",
+                                                            "actualCity": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['addresses']?[0]?['locality'], '')",
                                                             "expectedState": "@coalesce(outputs('Compose_Final_Update_User_Body')?['state'], '')",
-                                                            "actualState": "@coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['addresses']?[0]?['region'], '')",
+                                                            "actualState": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['addresses']?[0]?['region'], '')",
                                                             "expectedPostalCode": "@coalesce(outputs('Compose_Final_Update_User_Body')?['postalCode'], '')",
-                                                            "actualPostalCode": "@coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['addresses']?[0]?['postalCode'], '')",
+                                                            "actualPostalCode": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['addresses']?[0]?['postalCode'], '')",
                                                             "expectedDivision": "@coalesce(outputs('Compose_Final_Update_User_Body')?['employeeOrgData']?['division'], '')",
-                                                            "actualDivision": "@coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['division'], '')",
+                                                            "actualDivision": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['division'], '')",
                                                             "expectedCostCenter": "@coalesce(outputs('Compose_Final_Update_User_Body')?['employeeOrgData']?['costCenter'], '')",
-                                                            "actualCostCenter": "@coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['costCenter'], '')",
-                                                            "displayNameMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['displayName'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['displayName'], ''))",
-                                                            "givenNameMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['givenName'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['name']?['givenName'], ''))",
-                                                            "surnameMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['surname'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['name']?['familyName'], ''))",
-                                                            "jobTitleMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['jobTitle'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['title'], ''))",
-                                                            "departmentMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['department'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['department'], ''))",
-                                                            "companyNameMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['companyName'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['organization'], ''))",
-                                                            "officeLocationMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['officeLocation'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['officeLocation'], ''))",
-                                                            "preferredLanguageMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['preferredLanguage'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['preferredLanguage'], ''))",
-                                                            "employeeTypeMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['employeeType'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['employeeType'], ''))",
-                                                            "usageLocationMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['usageLocation'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['usageLocation'], ''))",
-                                                            "countryMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['country'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['addresses']?[0]?['country'], ''))",
-                                                            "streetAddressMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['streetAddress'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['addresses']?[0]?['streetAddress'], ''))",
-                                                            "cityMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['city'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['addresses']?[0]?['locality'], ''))",
-                                                            "stateMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['state'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['addresses']?[0]?['region'], ''))",
-                                                            "postalCodeMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['postalCode'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['addresses']?[0]?['postalCode'], ''))",
-                                                            "divisionMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['employeeOrgData']?['division'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['division'], ''))",
-                                                            "costCenterMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['employeeOrgData']?['costCenter'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['costCenter'], ''))",
-                                                            "attributesMatch": "@and(and(and(and(and(equals(coalesce(outputs('Compose_Final_Update_User_Body')?['displayName'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['displayName'], '')), equals(coalesce(outputs('Compose_Final_Update_User_Body')?['givenName'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['name']?['givenName'], ''))), and(equals(coalesce(outputs('Compose_Final_Update_User_Body')?['surname'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['name']?['familyName'], '')), equals(coalesce(outputs('Compose_Final_Update_User_Body')?['jobTitle'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['title'], '')))), and(and(equals(coalesce(outputs('Compose_Final_Update_User_Body')?['department'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['department'], '')), equals(coalesce(outputs('Compose_Final_Update_User_Body')?['companyName'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['organization'], ''))), and(equals(coalesce(outputs('Compose_Final_Update_User_Body')?['officeLocation'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['officeLocation'], '')), equals(coalesce(outputs('Compose_Final_Update_User_Body')?['preferredLanguage'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['preferredLanguage'], ''))))), and(and(and(equals(coalesce(outputs('Compose_Final_Update_User_Body')?['employeeType'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['employeeType'], '')), equals(coalesce(outputs('Compose_Final_Update_User_Body')?['usageLocation'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['usageLocation'], ''))), and(equals(coalesce(outputs('Compose_Final_Update_User_Body')?['country'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['addresses']?[0]?['country'], '')), equals(coalesce(outputs('Compose_Final_Update_User_Body')?['streetAddress'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['addresses']?[0]?['streetAddress'], '')))), and(and(equals(coalesce(outputs('Compose_Final_Update_User_Body')?['city'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['addresses']?[0]?['locality'], '')), equals(coalesce(outputs('Compose_Final_Update_User_Body')?['state'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['addresses']?[0]?['region'], ''))), and(equals(coalesce(outputs('Compose_Final_Update_User_Body')?['postalCode'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['addresses']?[0]?['postalCode'], '')), and(equals(coalesce(outputs('Compose_Final_Update_User_Body')?['employeeOrgData']?['division'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['division'], '')), equals(coalesce(outputs('Compose_Final_Update_User_Body')?['employeeOrgData']?['costCenter'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['costCenter'], ''))))))), and(and(equals(coalesce(outputs('Compose_Final_Update_User_Body')?['employeeOrgData']?['division'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['division'], '')), equals(coalesce(outputs('Compose_Final_Update_User_Body')?['employeeOrgData']?['costCenter'], ''), coalesce(first(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['Resources'])?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['costCenter'], ''))), true))"
+                                                            "actualCostCenter": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['costCenter'], '')",
+                                                            "expectedMailNickname": "@coalesce(outputs('Compose_Final_Update_User_Body')?['mailNickname'], '')",
+                                                            "actualMailNickname": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['mailNickname'], '')",
+                                                            "expectedMail": "@coalesce(outputs('Compose_Final_Update_User_Body')?['mail'], '')",
+                                                            "actualMail": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['emails']?[0]?['value'], '')",
+                                                            "expectedEmployeeId": "@coalesce(outputs('Compose_Final_Update_User_Body')?['employeeId'], '')",
+                                                            "actualEmployeeId": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['employeeNumber'], '')",
+                                                            "expectedUserType": "@coalesce(outputs('Compose_Final_Update_User_Body')?['userType'], '')",
+                                                            "actualUserType": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['userType'], '')",
+                                                            "expectedMobilePhone": "@coalesce(outputs('Compose_Final_Update_User_Body')?['mobilePhone'], '')",
+                                                            "actualMobilePhone": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['phoneNumbers']?[0]?['value'], '')",
+                                                            "expectedFaxNumber": "@coalesce(outputs('Compose_Final_Update_User_Body')?['faxNumber'], '')",
+                                                            "actualFaxNumber": "@coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['faxNumber'], '')",
+                                                            "displayNameMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['displayName'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['displayName'], ''))",
+                                                            "givenNameMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['givenName'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['name']?['givenName'], ''))",
+                                                            "surnameMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['surname'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['name']?['familyName'], ''))",
+                                                            "jobTitleMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['jobTitle'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['title'], ''))",
+                                                            "departmentMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['department'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['department'], ''))",
+                                                            "companyNameMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['companyName'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['organization'], ''))",
+                                                            "officeLocationMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['officeLocation'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['officeLocation'], ''))",
+                                                            "preferredLanguageMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['preferredLanguage'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['preferredLanguage'], ''))",
+                                                            "employeeTypeMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['employeeType'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['employeeType'], ''))",
+                                                            "usageLocationMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['usageLocation'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['usageLocation'], ''))",
+                                                            "countryMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['country'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['addresses']?[0]?['country'], ''))",
+                                                            "streetAddressMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['streetAddress'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['addresses']?[0]?['streetAddress'], ''))",
+                                                            "cityMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['city'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['addresses']?[0]?['locality'], ''))",
+                                                            "stateMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['state'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['addresses']?[0]?['region'], ''))",
+                                                            "postalCodeMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['postalCode'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['addresses']?[0]?['postalCode'], ''))",
+                                                            "divisionMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['employeeOrgData']?['division'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['division'], ''))",
+                                                            "costCenterMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['employeeOrgData']?['costCenter'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['costCenter'], ''))",
+                                                            "userPrincipalNameMatches": "@equals(coalesce(outputs('Compose_Final_Update_User_Body')?['userPrincipalName'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['userName'], ''))",
+                                                            "attributesMatch": "@and(and(and(and(and(and(equals(coalesce(outputs('Compose_Final_Update_User_Body')?['userPrincipalName'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['userName'], '')), equals(coalesce(outputs('Compose_Final_Update_User_Body')?['displayName'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['displayName'], ''))), equals(coalesce(outputs('Compose_Final_Update_User_Body')?['givenName'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['name']?['givenName'], ''))), and(equals(coalesce(outputs('Compose_Final_Update_User_Body')?['surname'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['name']?['familyName'], '')), equals(coalesce(outputs('Compose_Final_Update_User_Body')?['jobTitle'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['title'], '')))), and(and(equals(coalesce(outputs('Compose_Final_Update_User_Body')?['department'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['department'], '')), equals(coalesce(outputs('Compose_Final_Update_User_Body')?['companyName'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['organization'], ''))), and(equals(coalesce(outputs('Compose_Final_Update_User_Body')?['officeLocation'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['officeLocation'], '')), equals(coalesce(outputs('Compose_Final_Update_User_Body')?['preferredLanguage'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['preferredLanguage'], ''))))), and(and(and(equals(coalesce(outputs('Compose_Final_Update_User_Body')?['employeeType'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['employeeType'], '')), equals(coalesce(outputs('Compose_Final_Update_User_Body')?['usageLocation'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['usageLocation'], ''))), and(equals(coalesce(outputs('Compose_Final_Update_User_Body')?['country'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['addresses']?[0]?['country'], '')), equals(coalesce(outputs('Compose_Final_Update_User_Body')?['streetAddress'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['addresses']?[0]?['streetAddress'], '')))), and(and(equals(coalesce(outputs('Compose_Final_Update_User_Body')?['city'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['addresses']?[0]?['locality'], '')), equals(coalesce(outputs('Compose_Final_Update_User_Body')?['state'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['addresses']?[0]?['region'], ''))), and(equals(coalesce(outputs('Compose_Final_Update_User_Body')?['postalCode'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['addresses']?[0]?['postalCode'], '')), and(equals(coalesce(outputs('Compose_Final_Update_User_Body')?['employeeOrgData']?['division'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['division'], '')), equals(coalesce(outputs('Compose_Final_Update_User_Body')?['employeeOrgData']?['costCenter'], ''), coalesce(body('Update_User_-_Query_User_By_Id_After_Attributes_Update')?['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?['costCenter'], ''))))))), true)"
                                                         }
                                                     },
                                                     "Update_DoUntil_Poll_Update_Provisioning_Logs": {
@@ -974,26 +1002,31 @@
                                                     "Compose_Update_User_Body_With_Nulls": {
                                                         "type": "Compose",
                                                         "inputs": {
+                                                            "userPrincipalName": "@{if(contains(outputs('Select_Graph_Property_Names'), 'userPrincipalName'), concat('updated-', outputs('Generate_Test_UserNames')['updateUser']), null)}",
                                                             "displayName": "@{concat(outputs('Generate_Test_UserNames')['updateUser'], ' - Updated')}",
-                                                            "givenName": "@{if(contains(body('Select_Graph_Property_Names'), 'givenName'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['givenName'], 'UpdatedGiven'), null)}",
-                                                            "surname": "@{if(contains(body('Select_Graph_Property_Names'), 'surname'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['surname'], 'UpdatedSurname'), null)}",
-                                                            "jobTitle": "@{if(contains(body('Select_Graph_Property_Names'), 'jobTitle'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['jobTitle'], 'Updated Senior Test Position'), null)}",
-                                                            "department": "@{if(contains(body('Select_Graph_Property_Names'), 'department'), parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['department'], null)}",
-                                                            "companyName": "@{if(contains(body('Select_Graph_Property_Names'), 'companyName'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['companyName'], 'Updated Test Company'), null)}",
-                                                            "businessPhones": "@{if(contains(body('Select_Graph_Property_Names'), 'businessPhones'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['businessPhones'], json(concat('[\"+ 1-555-', substring(guid(),0,4), '\"]'))), null)}",
-                                                            "mobilePhone": "@{if(contains(body('Select_Graph_Property_Names'), 'mobilePhone'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['mobilePhone'], '+1-555-8888'), null)}",
-                                                            "officeLocation": "@{if(contains(body('Select_Graph_Property_Names'), 'officeLocation'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['officeLocation'], 'Updated Building B, Floor 5'), null)}",
-                                                            "preferredLanguage": "@{if(contains(body('Select_Graph_Property_Names'), 'preferredLanguage'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['preferredLanguage'], 'es-ES'), null)}",
-                                                            "employeeType": "@{if(contains(body('Select_Graph_Property_Names'), 'employeeType'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['employeeType'], 'Contractor'), null)}",
-                                                            "streetAddress": "@{if(contains(body('Select_Graph_Property_Names'), 'streetAddress'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['streetAddress'], '456 Updated Street'), null)}",
-                                                            "city": "@{if(contains(body('Select_Graph_Property_Names'), 'city'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['city'], 'Updated Seattle'), null)}",
-                                                            "state": "@{if(contains(body('Select_Graph_Property_Names'), 'state'), parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['state'], null)}",
-                                                            "country": "@{if(contains(body('Select_Graph_Property_Names'), 'country'), parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['country'], null)}",
-                                                            "postalCode": "@{if(contains(body('Select_Graph_Property_Names'), 'postalCode'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['postalCode'], '90210'), null)}",
-                                                            "usageLocation": "@{if(contains(body('Select_Graph_Property_Names'), 'usageLocation'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['usageLocation'], 'IN'), null)}",
-                                                            "otherMails": "@{if(contains(body('Select_Graph_Property_Names'), 'otherMails'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['otherMails'], json(concat('[\"', substring(guid(),0,8), '@example.com\"]'))), null)}",
-                                                            "faxNumber": "@{if(contains(body('Select_Graph_Property_Names'), 'faxNumber'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['faxNumber'], '+1-555-7777'), null)}",
-                                                            "employeeOrgData": "@{if(or(contains(body('Select_Graph_Property_Names'), 'division'), contains(body('Select_Graph_Property_Names'), 'costCenter')), json(concat('{\"division\":\"', parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['employeeOrgData']['division'], '\",\"costCenter\":\"99999\"}')), null)}"
+                                                            "mailNickname": "@{if(contains(outputs('Select_Graph_Property_Names'), 'mailNickname'), if(empty(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['mailNickname']), concat('upd', substring(guid(),0,8)), parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['mailNickname']), null)}",
+                                                            "mail": "@{if(contains(outputs('Select_Graph_Property_Names'), 'mail'), concat('updated-', outputs('Generate_Test_UserNames')['updateUser']), null)}",
+                                                            "employeeId": "@{if(contains(outputs('Select_Graph_Property_Names'), 'employeeId'), if(empty(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['employeeId']), substring(guid(),0,8), parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['employeeId']), null)}",
+                                                            "userType": "@{if(contains(outputs('Select_Graph_Property_Names'), 'userType'), if(empty(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['userType']), 'Member', parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['userType']), null)}",
+                                                            "givenName": "@{if(contains(outputs('Select_Graph_Property_Names'), 'givenName'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['givenName'], 'UpdatedGiven'), null)}",
+                                                            "surname": "@{if(contains(outputs('Select_Graph_Property_Names'), 'surname'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['surname'], 'UpdatedSurname'), null)}",
+                                                            "jobTitle": "@{if(contains(outputs('Select_Graph_Property_Names'), 'jobTitle'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['jobTitle'], 'Updated Senior Test Position'), null)}",
+                                                            "department": "@{if(contains(outputs('Select_Graph_Property_Names'), 'department'), parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['department'], null)}",
+                                                            "companyName": "@{if(contains(outputs('Select_Graph_Property_Names'), 'companyName'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['companyName'], 'Updated Test Company'), null)}",
+                                                            "businessPhones": "@if(contains(outputs('Select_Graph_Property_Names'), 'businessPhones'), if(greater(length(coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['businessPhones'], json('[]'))), 0), parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['businessPhones'], json(concat('[\"+ 1-555-', substring(guid(),0,4), '\"]'))), null)",
+                                                            "mobilePhone": "@{if(contains(outputs('Select_Graph_Property_Names'), 'mobilePhone'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['mobilePhone'], '+1-555-8888'), null)}",
+                                                            "officeLocation": "@{if(contains(outputs('Select_Graph_Property_Names'), 'officeLocation'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['officeLocation'], 'Updated Building B, Floor 5'), null)}",
+                                                            "preferredLanguage": "@{if(contains(outputs('Select_Graph_Property_Names'), 'preferredLanguage'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['preferredLanguage'], 'es-ES'), null)}",
+                                                            "employeeType": "@{if(contains(outputs('Select_Graph_Property_Names'), 'employeeType'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['employeeType'], 'Contractor'), null)}",
+                                                            "streetAddress": "@{if(contains(outputs('Select_Graph_Property_Names'), 'streetAddress'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['streetAddress'], '456 Updated Street'), null)}",
+                                                            "city": "@{if(contains(outputs('Select_Graph_Property_Names'), 'city'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['city'], 'Updated Seattle'), null)}",
+                                                            "state": "@{if(contains(outputs('Select_Graph_Property_Names'), 'state'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['state'], 'WA'), null)}",
+                                                            "country": "@{if(contains(outputs('Select_Graph_Property_Names'), 'country'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['country'], 'US'), null)}",
+                                                            "postalCode": "@{if(contains(outputs('Select_Graph_Property_Names'), 'postalCode'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['postalCode'], '90210'), null)}",
+                                                            "usageLocation": "@{if(contains(outputs('Select_Graph_Property_Names'), 'usageLocation'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['usageLocation'], 'IN'), null)}",
+                                                            "otherMails": "@if(contains(outputs('Select_Graph_Property_Names'), 'otherMails'), if(greater(length(coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['otherMails'], json('[]'))), 0), parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['otherMails'], null), null)",
+                                                            "faxNumber": "@{if(contains(outputs('Select_Graph_Property_Names'), 'faxNumber'), coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['faxNumber'], '+1-555-7777'), null)}",
+                                                            "employeeOrgData": "@if(and(not(contains(outputs('Select_Graph_Property_Names'), 'employeeOrgData.division')), not(contains(outputs('Select_Graph_Property_Names'), 'employeeOrgData.costCenter'))), null, json(concat('{', if(contains(outputs('Select_Graph_Property_Names'), 'employeeOrgData.division'), concat('\"division\":\"', coalesce(parameters('defaultUserProperties')[mod(add(outputs('Generate_Test_UserNames')['index'], 1), length(parameters('defaultUserProperties')))]['employeeOrgData']['division'], 'UpdatedDiv'), '\"'), ''), if(and(contains(outputs('Select_Graph_Property_Names'), 'employeeOrgData.division'), contains(outputs('Select_Graph_Property_Names'), 'employeeOrgData.costCenter')), ',', ''), if(contains(outputs('Select_Graph_Property_Names'), 'employeeOrgData.costCenter'), '\"costCenter\":\"99999\"', ''), '}')))"
                                                         }
                                                     },
                                                     "Compose_Final_Update_User_Body": {
@@ -1003,7 +1036,7 @@
                                                             ]
                                                         },
                                                         "type": "Compose",
-                                                        "inputs": "@union(if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['givenName'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['givenName'], ''))), json(concat('{\"givenName\":\"', outputs('Compose_Update_User_Body_With_Nulls')['givenName'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['surname'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['surname'], ''))), json(concat('{\"surname\":\"', outputs('Compose_Update_User_Body_With_Nulls')['surname'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['jobTitle'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['jobTitle'], ''))), json(concat('{\"jobTitle\":\"', outputs('Compose_Update_User_Body_With_Nulls')['jobTitle'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['department'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['department'], ''))), json(concat('{\"department\":\"', outputs('Compose_Update_User_Body_With_Nulls')['department'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['companyName'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['companyName'], ''))), json(concat('{\"companyName\":\"', outputs('Compose_Update_User_Body_With_Nulls')['companyName'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['mobilePhone'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['mobilePhone'], ''))), json(concat('{\"mobilePhone\":\"', outputs('Compose_Update_User_Body_With_Nulls')['mobilePhone'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['officeLocation'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['officeLocation'], ''))), json(concat('{\"officeLocation\":\"', outputs('Compose_Update_User_Body_With_Nulls')['officeLocation'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['preferredLanguage'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['preferredLanguage'], ''))), json(concat('{\"preferredLanguage\":\"', outputs('Compose_Update_User_Body_With_Nulls')['preferredLanguage'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['employeeType'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['employeeType'], ''))), json(concat('{\"employeeType\":\"', outputs('Compose_Update_User_Body_With_Nulls')['employeeType'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['streetAddress'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['streetAddress'], ''))), json(concat('{\"streetAddress\":\"', outputs('Compose_Update_User_Body_With_Nulls')['streetAddress'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['city'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['city'], ''))), json(concat('{\"city\":\"', outputs('Compose_Update_User_Body_With_Nulls')['city'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['state'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['state'], ''))), json(concat('{\"state\":\"', outputs('Compose_Update_User_Body_With_Nulls')['state'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['country'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['country'], ''))), json(concat('{\"country\":\"', outputs('Compose_Update_User_Body_With_Nulls')['country'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['postalCode'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['postalCode'], ''))), json(concat('{\"postalCode\":\"', outputs('Compose_Update_User_Body_With_Nulls')['postalCode'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['usageLocation'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['usageLocation'], ''))), json(concat('{\"usageLocation\":\"', outputs('Compose_Update_User_Body_With_Nulls')['usageLocation'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['faxNumber'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['faxNumber'], ''))), json(concat('{\"faxNumber\":\"', outputs('Compose_Update_User_Body_With_Nulls')['faxNumber'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['businessPhones'], null)), greater(length(coalesce(outputs('Compose_Update_User_Body_With_Nulls')['businessPhones'], json('[]'))), 0)), json(concat('{\"businessPhones\":', string(outputs('Compose_Update_User_Body_With_Nulls')['businessPhones']), '}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['otherMails'], null)), greater(length(coalesce(outputs('Compose_Update_User_Body_With_Nulls')['otherMails'], json('[]'))), 0)), json(concat('{\"otherMails\":', string(outputs('Compose_Update_User_Body_With_Nulls')['otherMails']), '}')), json('{}')), json(concat('{\"displayName\":\"', outputs('Compose_Update_User_Body_With_Nulls')['displayName'], '\"}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['employeeOrgData'], null)), not(empty(string(outputs('Compose_Update_User_Body_With_Nulls')['employeeOrgData'])))), json(concat('{\"employeeOrgData\":', string(outputs('Compose_Update_User_Body_With_Nulls')['employeeOrgData']), '}')), json('{}')))"
+                                                        "inputs": "@union(if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['userPrincipalName'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['userPrincipalName'], ''))), json(concat('{\"userPrincipalName\":\"', outputs('Compose_Update_User_Body_With_Nulls')['userPrincipalName'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['mailNickname'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['mailNickname'], ''))), json(concat('{\"mailNickname\":\"', outputs('Compose_Update_User_Body_With_Nulls')['mailNickname'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['userType'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['userType'], ''))), json(concat('{\"userType\":\"', outputs('Compose_Update_User_Body_With_Nulls')['userType'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['givenName'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['givenName'], ''))), json(concat('{\"givenName\":\"', outputs('Compose_Update_User_Body_With_Nulls')['givenName'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['surname'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['surname'], ''))), json(concat('{\"surname\":\"', outputs('Compose_Update_User_Body_With_Nulls')['surname'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['jobTitle'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['jobTitle'], ''))), json(concat('{\"jobTitle\":\"', outputs('Compose_Update_User_Body_With_Nulls')['jobTitle'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['department'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['department'], ''))), json(concat('{\"department\":\"', outputs('Compose_Update_User_Body_With_Nulls')['department'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['companyName'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['companyName'], ''))), json(concat('{\"companyName\":\"', outputs('Compose_Update_User_Body_With_Nulls')['companyName'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['mobilePhone'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['mobilePhone'], ''))), json(concat('{\"mobilePhone\":\"', outputs('Compose_Update_User_Body_With_Nulls')['mobilePhone'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['officeLocation'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['officeLocation'], ''))), json(concat('{\"officeLocation\":\"', outputs('Compose_Update_User_Body_With_Nulls')['officeLocation'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['preferredLanguage'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['preferredLanguage'], ''))), json(concat('{\"preferredLanguage\":\"', outputs('Compose_Update_User_Body_With_Nulls')['preferredLanguage'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['employeeId'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['employeeId'], ''))), json(concat('{\"employeeId\":\"', outputs('Compose_Update_User_Body_With_Nulls')['employeeId'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['employeeType'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['employeeType'], ''))), json(concat('{\"employeeType\":\"', outputs('Compose_Update_User_Body_With_Nulls')['employeeType'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['mail'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['mail'], ''))), json(concat('{\"mail\":\"', outputs('Compose_Update_User_Body_With_Nulls')['mail'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['streetAddress'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['streetAddress'], ''))), json(concat('{\"streetAddress\":\"', outputs('Compose_Update_User_Body_With_Nulls')['streetAddress'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['city'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['city'], ''))), json(concat('{\"city\":\"', outputs('Compose_Update_User_Body_With_Nulls')['city'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['state'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['state'], ''))), json(concat('{\"state\":\"', outputs('Compose_Update_User_Body_With_Nulls')['state'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['country'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['country'], ''))), json(concat('{\"country\":\"', outputs('Compose_Update_User_Body_With_Nulls')['country'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['postalCode'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['postalCode'], ''))), json(concat('{\"postalCode\":\"', outputs('Compose_Update_User_Body_With_Nulls')['postalCode'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['usageLocation'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['usageLocation'], ''))), json(concat('{\"usageLocation\":\"', outputs('Compose_Update_User_Body_With_Nulls')['usageLocation'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['faxNumber'], null)), not(equals(outputs('Compose_Update_User_Body_With_Nulls')['faxNumber'], ''))), json(concat('{\"faxNumber\":\"', outputs('Compose_Update_User_Body_With_Nulls')['faxNumber'], '\"}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['businessPhones'], null)), greater(length(coalesce(outputs('Compose_Update_User_Body_With_Nulls')['businessPhones'], json('[]'))), 0)), json(concat('{\"businessPhones\":', string(outputs('Compose_Update_User_Body_With_Nulls')['businessPhones']), '}')), json('{}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['otherMails'], null)), greater(length(coalesce(outputs('Compose_Update_User_Body_With_Nulls')['otherMails'], json('[]'))), 0)), json(concat('{\"otherMails\":', string(outputs('Compose_Update_User_Body_With_Nulls')['otherMails']), '}')), json('{}')), json(concat('{\"displayName\":\"', outputs('Compose_Update_User_Body_With_Nulls')['displayName'], '\"}')), if(and(not(equals(outputs('Compose_Update_User_Body_With_Nulls')['employeeOrgData'], null)), not(empty(string(outputs('Compose_Update_User_Body_With_Nulls')['employeeOrgData'])))), json(concat('{\"employeeOrgData\":', string(outputs('Compose_Update_User_Body_With_Nulls')['employeeOrgData']), '}')), json('{}')))"
                                                     }
                                                 },
                                                 "type": "Scope"
@@ -1678,10 +1711,10 @@
                                                     },
                                                     "DeleteUser_DoUntil_Poll_Delete_Provisioning_Logs": {
                                                         "actions": {
-                                                            "DeleteUser_Verify_Delete_Provisioning_Logs": {
+                                                            "DeleteUser_Verify_Disable_Provisioning_Logs": {
                                                                 "type": "Http",
                                                                 "inputs": {
-                                                                    "uri": "@{concat('https://graph.microsoft.com/beta/auditLogs/provisioning?$filter=jobId%20eq%20%27', outputs('Compose_SyncJobId'), '%27%20and%20servicePrincipal/id%20eq%20%27', parameters('servicePrincipalId'), '%27%20and%20sourceIdentity/id%20eq%20%27', body('DeleteUser_Create_Delete_User_Graph')?['id'], '%27%20and%20provisioningAction%20eq%20%27', if(parameters('IsSoftDeleted'), 'Disable', 'Delete'), '%27&$orderby=activityDateTime%20desc&$top=1')}",
+                                                                    "uri": "@{concat('https://graph.microsoft.com/beta/auditLogs/provisioning?$filter=jobId%20eq%20%27', outputs('Compose_SyncJobId'), '%27%20and%20servicePrincipal/id%20eq%20%27', parameters('servicePrincipalId'), '%27%20and%20sourceIdentity/id%20eq%20%27', body('DeleteUser_Create_Delete_User_Graph')?['id'], '%27%20and%20provisioningAction%20eq%20%27Disable%27&$orderby=activityDateTime%20desc&$top=1')}",
                                                                     "method": "GET",
                                                                     "headers": {
                                                                         "Accept": "application/json"
@@ -1692,8 +1725,26 @@
                                                                     }
                                                                 }
                                                             },
-                                                            "DeleteUser_Delay_Delete_Provisioning_Logs_15s": {
+                                                            "DeleteUser_Verify_Delete_Provisioning_Logs": {
+                                                                "type": "Http",
+                                                                "inputs": {
+                                                                    "uri": "@{concat('https://graph.microsoft.com/beta/auditLogs/provisioning?$filter=jobId%20eq%20%27', outputs('Compose_SyncJobId'), '%27%20and%20servicePrincipal/id%20eq%20%27', parameters('servicePrincipalId'), '%27%20and%20sourceIdentity/id%20eq%20%27', body('DeleteUser_Create_Delete_User_Graph')?['id'], '%27%20and%20provisioningAction%20eq%20%27Delete%27&$orderby=activityDateTime%20desc&$top=1')}",
+                                                                    "method": "GET",
+                                                                    "headers": {
+                                                                        "Accept": "application/json"
+                                                                    },
+                                                                    "authentication": {
+                                                                        "type": "ManagedServiceIdentity",
+                                                                        "audience": "https://graph.microsoft.com/"
+                                                                    }
+                                                                }
+                                                            },
+                                                            "DeleteUser_Delay": {
                                                                 "runAfter": {
+                                                                    "DeleteUser_Verify_Disable_Provisioning_Logs": [
+                                                                        "Succeeded",
+                                                                        "Failed"
+                                                                    ],
                                                                     "DeleteUser_Verify_Delete_Provisioning_Logs": [
                                                                         "Succeeded",
                                                                         "Failed"
@@ -1715,7 +1766,7 @@
                                                                 "TimedOut"
                                                             ]
                                                         },
-                                                        "expression": "@greater(length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0)",
+                                                        "expression": "@or(and(greater(length(coalesce(body('DeleteUser_Verify_Disable_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('DeleteUser_Verify_Disable_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), and(greater(length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')))",
                                                         "limit": {
                                                             "count": 150,
                                                             "timeout": "PT40M"
@@ -1817,12 +1868,15 @@
                                                 },
                                                 "type": "Compose",
                                                 "inputs": {
-                                                    "provisioningLogsCount": "@length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]')))",
-                                                    "hasProvisioningLogs": "@greater(length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0)",
-                                                    "provisioningStatus": "@if(greater(length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND')",
-                                                    "provisioningResult": "@if(equals(variables('DeleteUserScopeExecutionStatus'), 'Succeeded'), if(greater(length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0), if(equals(toLower(coalesce(first(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'), 'success', concat('DeleteUser_Verify_Delete_Provisioning_Logs: ', coalesce(first(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'))), 'DeleteUser_Verify_Delete_Provisioning_Logs: NO_LOGS_FOUND'), concat('Failed Action: ', variables('DeleteUserFailedActionName')))",
-                                                    "provisioningErrorDetails": "@if(equals(variables('DeleteUserScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(first(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status']), 'failure')), first(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null), variables('DeleteUserFailedActionResponse'))",
-                                                    "overallResult": "@if(equals(variables('DeleteUserScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), 'PASSED', 'FAILED'), 'FAILED')"
+                                                    "disableLogsCount": "@length(coalesce(body('DeleteUser_Verify_Disable_Provisioning_Logs')?['value'], json('[]')))",
+                                                    "deleteLogsCount": "@length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]')))",
+                                                    "hasDisableLogs": "@greater(length(coalesce(body('DeleteUser_Verify_Disable_Provisioning_Logs')?['value'], json('[]'))), 0)",
+                                                    "hasDeleteLogs": "@greater(length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0)",
+                                                    "disableStatus": "@if(greater(length(coalesce(body('DeleteUser_Verify_Disable_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('DeleteUser_Verify_Disable_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND')",
+                                                    "deleteStatus": "@if(greater(length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS_FOUND')",
+                                                    "provisioningResult": "@if(equals(variables('DeleteUserScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('DeleteUser_Verify_Disable_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('DeleteUser_Verify_Disable_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), 'success (Disable)', if(and(greater(length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), 'success (Delete)', concat('Disable: ', if(greater(length(coalesce(body('DeleteUser_Verify_Disable_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('DeleteUser_Verify_Disable_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS'), ', Delete: ', if(greater(length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0), coalesce(first(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], 'UNKNOWN'), 'NO_LOGS')))), concat('Failed Action: ', variables('DeleteUserFailedActionName')))",
+                                                    "provisioningErrorDetails": "@if(equals(variables('DeleteUserScopeExecutionStatus'), 'Succeeded'), if(and(greater(length(coalesce(body('DeleteUser_Verify_Disable_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(first(body('DeleteUser_Verify_Disable_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status']), 'failure')), first(body('DeleteUser_Verify_Disable_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], if(and(greater(length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(first(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status']), 'failure')), first(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['errorInformation'], null)), variables('DeleteUserFailedActionResponse'))",
+                                                    "overallResult": "@if(equals(variables('DeleteUserScopeExecutionStatus'), 'Succeeded'), if(or(and(greater(length(coalesce(body('DeleteUser_Verify_Disable_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('DeleteUser_Verify_Disable_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success')), and(greater(length(coalesce(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'], json('[]'))), 0), equals(toLower(coalesce(first(body('DeleteUser_Verify_Delete_Provisioning_Logs')?['value'])?['provisioningStatusInfo']?['status'], '')), 'success'))), 'PASSED', 'FAILED'), 'FAILED')"
                                                 }
                                             },
                                             "DeleteUser_Set_Phase2_Output_Variables": {
@@ -3884,23 +3938,33 @@
                             "actions": {}
                         },
                         "expression": {
-                            "or": [
+                            "and": [
                                 {
                                     "equals": [
-                                        "@parameters('EnabledTests')",
-                                        "All"
+                                        "@parameters('IsSoftDeleted')",
+                                        true
                                     ]
                                 },
                                 {
-                                    "equals": [
-                                        "@parameters('EnabledTests')",
-                                        "Disable_User_Test"
-                                    ]
-                                },
-                                {
-                                    "equals": [
-                                        "@parameters('EnabledTests')",
-                                        "UserTests"
+                                    "or": [
+                                        {
+                                            "equals": [
+                                                "@parameters('EnabledTests')",
+                                                "All"
+                                            ]
+                                        },
+                                        {
+                                            "equals": [
+                                                "@parameters('EnabledTests')",
+                                                "Disable_User_Test"
+                                            ]
+                                        },
+                                        {
+                                            "equals": [
+                                                "@parameters('EnabledTests')",
+                                                "UserTests"
+                                            ]
+                                        }
                                     ]
                                 }
                             ]
@@ -7222,11 +7286,14 @@
                 },
                 "type": "ParseJson",
                 "inputs": {
-                    "content": "@body('Get_Templates')",
+                    "content": "@body('Get_Schema')",
                     "schema": {
                         "type": "object",
                         "properties": {
-                            "value": {
+                            "id": {
+                                "type": "string"
+                            },
+                            "synchronizationRules": {
                                 "type": "array",
                                 "items": {
                                     "type": "object",
@@ -7234,50 +7301,42 @@
                                         "id": {
                                             "type": "string"
                                         },
-                                        "synchronizationRules": {
+                                        "objectMappings": {
                                             "type": "array",
                                             "items": {
                                                 "type": "object",
                                                 "properties": {
-                                                    "id": {
+                                                    "sourceDirectoryName": {
                                                         "type": "string"
                                                     },
-                                                    "objectMappings": {
+                                                    "targetDirectoryName": {
+                                                        "type": "string"
+                                                    },
+                                                    "sourceObjectName": {
+                                                        "type": "string"
+                                                    },
+                                                    "targetObjectName": {
+                                                        "type": "string"
+                                                    },
+                                                    "attributeMappings": {
                                                         "type": "array",
                                                         "items": {
                                                             "type": "object",
                                                             "properties": {
-                                                                "sourceDirectoryName": {
+                                                                "targetAttributeName": {
                                                                     "type": "string"
                                                                 },
-                                                                "targetDirectoryName": {
-                                                                    "type": "string"
-                                                                },
-                                                                "sourceObjectName": {
-                                                                    "type": "string"
-                                                                },
-                                                                "targetObjectName": {
-                                                                    "type": "string"
-                                                                },
-                                                                "attributeMappings": {
-                                                                    "type": "array",
-                                                                    "items": {
-                                                                        "type": "object",
-                                                                        "properties": {
-                                                                            "targetAttributeName": {
-                                                                                "type": "string"
-                                                                            },
-                                                                            "source": {
-                                                                                "type": "object",
-                                                                                "properties": {
-                                                                                    "name": {
-                                                                                        "type": "string"
-                                                                                    },
-                                                                                    "expression": {
-                                                                                        "type": "string"
-                                                                                    }
-                                                                                }
-                                                                            }
+                                                                "source": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "name": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "expression": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "type": {
+                                                                            "type": "string"
                                                                         }
                                                                     }
                                                                 }
@@ -7293,143 +7352,6 @@
                         }
                     }
                 }
-            },
-            "Process_Template_Mappings": {
-                "actions": {
-                    "ForEach_Templates": {
-                        "foreach": "@coalesce(body('Parse_Templates')?['value'], json('[]'))",
-                        "actions": {
-                            "Compose_Current_Template": {
-                                "type": "Compose",
-                                "inputs": "@item()"
-                            },
-                            "ForEach_Rules": {
-                                "foreach": "@coalesce(item()?['schema']['synchronizationRules'], json('[]'))",
-                                "actions": {
-                                    "ForEach_ObjectMappings": {
-                                        "foreach": "@coalesce(item()?['objectMappings'], json('[]'))",
-                                        "actions": {
-                                            "If_TargetObject_Is_Enterprise_User": {
-                                                "actions": {
-                                                    "ForEach_AttributeMappings": {
-                                                        "foreach": "@coalesce(items('ForEach_ObjectMappings')?['attributeMappings'], json('[]'))",
-                                                        "actions": {
-                                                            "If_TargetAttribute_Present": {
-                                                                "actions": {
-                                                                    "Append_Mapping": {
-                                                                        "type": "AppendToArrayVariable",
-                                                                        "inputs": {
-                                                                            "name": "mappedSources",
-                                                                            "value": {
-                                                                                "source": "@coalesce(items('ForEach_AttributeMappings')?['source']?['name'], items('ForEach_AttributeMappings')?['source']?['expression'])",
-                                                                                "target": "@items('ForEach_AttributeMappings')?['targetAttributeName']",
-                                                                                "sourceObject": "@coalesce(items('ForEach_ObjectMappings')?['sourceObjectName'], '')",
-                                                                                "targetObject": "@coalesce(items('ForEach_ObjectMappings')?['targetObjectName'], '')",
-                                                                                "sourceDirectoryName": "@coalesce(items('ForEach_ObjectMappings')?['sourceDirectoryName'], '')",
-                                                                                "targetDirectoryName": "@coalesce(items('ForEach_ObjectMappings')?['targetDirectoryName'], '')",
-                                                                                "mappingType": "@coalesce(items('ForEach_AttributeMappings')?['source']['type'], '')"
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                },
-                                                                "else": {
-                                                                    "actions": {}
-                                                                },
-                                                                "expression": {
-                                                                    "and": [
-                                                                        {
-                                                                            "not": {
-                                                                                "equals": [
-                                                                                    "@items('ForEach_AttributeMappings')?['targetAttributeName']",
-                                                                                    null
-                                                                                ]
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "not": {
-                                                                                "equals": [
-                                                                                    "@items('ForEach_AttributeMappings')?['targetAttributeName']",
-                                                                                    ""
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    ]
-                                                                },
-                                                                "type": "If"
-                                                            }
-                                                        },
-                                                        "type": "Foreach"
-                                                    }
-                                                },
-                                                "else": {
-                                                    "actions": {}
-                                                },
-                                                "expression": {
-                                                    "and": [
-                                                        {
-                                                            "equals": [
-                                                                "@items('ForEach_ObjectMappings')?['targetObjectName']",
-                                                                "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User"
-                                                            ]
-                                                        }
-                                                    ]
-                                                },
-                                                "type": "If"
-                                            }
-                                        },
-                                        "type": "Foreach"
-                                    }
-                                },
-                                "runAfter": {
-                                    "Compose_Current_Template": [
-                                        "Succeeded"
-                                    ]
-                                },
-                                "type": "Foreach"
-                            }
-                        },
-                        "type": "Foreach"
-                    },
-                    "Compose_MappedSources_Result": {
-                        "runAfter": {
-                            "ForEach_Templates": [
-                                "Succeeded"
-                            ]
-                        },
-                        "type": "Compose",
-                        "inputs": "@union(variables('mappedSources'), json('[]'))"
-                    },
-                    "Filter_Direct_Mappings": {
-                        "runAfter": {
-                            "Compose_MappedSources_Result": [
-                                "Succeeded"
-                            ]
-                        },
-                        "type": "Query",
-                        "inputs": {
-                            "from": "@outputs('Compose_MappedSources_Result')",
-                            "where": "@not(equals(item()?['mappingType'], 'function'))"
-                        }
-                    },
-                    "Select_Graph_Property_Names": {
-                        "runAfter": {
-                            "Filter_Direct_Mappings": [
-                                "Succeeded"
-                            ]
-                        },
-                        "type": "Select",
-                        "inputs": {
-                            "from": "@body('Filter_Direct_Mappings')",
-                            "select": "@item()?['source']"
-                        }
-                    }
-                },
-                "runAfter": {
-                    "Initialize_MappedSources": [
-                        "Succeeded"
-                    ]
-                },
-                "type": "Scope"
             },
             "Initialize_MappedSources": {
                 "runAfter": {
@@ -7447,6 +7369,148 @@
                         }
                     ]
                 }
+            },
+            "Initialize_AllSourceAttributeNames": {
+                "runAfter": {
+                    "Initialize_MappedSources": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "allSourceAttributeNames",
+                            "type": "Array",
+                            "value": []
+                        }
+                    ]
+                }
+            },
+            "Process_Template_Mappings": {
+                "actions": {
+                    "Filter_User_ObjectMapping": {
+                        "runAfter": {},
+                        "type": "Query",
+                        "inputs": {
+                            "from": "@coalesce(first(body('Parse_Templates')?['synchronizationRules'])?['objectMappings'], json('[]'))",
+                            "where": "@equals(item()?['targetObjectName'], 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User')"
+                        }
+                    },
+                    "ForEach_AttributeMappings": {
+                        "foreach": "@coalesce(first(body('Filter_User_ObjectMapping'))?['attributeMappings'], json('[]'))",
+                        "actions": {
+                            "If_TargetAttribute_Present": {
+                                "actions": {
+                                    "Filter_Source_Parameters": {
+                                        "runAfter": {},
+                                        "type": "Query",
+                                        "inputs": {
+                                            "from": "@coalesce(items('ForEach_AttributeMappings')?['source']?['parameters'], json('[]'))",
+                                            "where": "@equals(item()?['key'], 'source')"
+                                        }
+                                    },
+                                    "Select_Source_Attribute_Names": {
+                                        "runAfter": {
+                                            "Filter_Source_Parameters": [
+                                                "Succeeded"
+                                            ]
+                                        },
+                                        "type": "Select",
+                                        "inputs": {
+                                            "from": "@body('Filter_Source_Parameters')",
+                                            "select": "@item()?['value']?['name']"
+                                        }
+                                    },
+                                    "Append_Mapping": {
+                                        "runAfter": {
+                                            "Select_Source_Attribute_Names": [
+                                                "Succeeded"
+                                            ]
+                                        },
+                                        "type": "AppendToArrayVariable",
+                                        "inputs": {
+                                            "name": "mappedSources",
+                                            "value": {
+                                                "source": "@if(equals(items('ForEach_AttributeMappings')?['source']?['type'], 'Attribute'), items('ForEach_AttributeMappings')?['source']?['name'], first(body('Select_Source_Attribute_Names')))",
+                                                "sourceAttributes": "@if(equals(items('ForEach_AttributeMappings')?['source']?['type'], 'Attribute'), createArray(items('ForEach_AttributeMappings')?['source']?['name']), body('Select_Source_Attribute_Names'))",
+                                                "target": "@items('ForEach_AttributeMappings')?['targetAttributeName']",
+                                                "sourceObject": "@coalesce(first(body('Filter_User_ObjectMapping'))?['sourceObjectName'], '')",
+                                                "targetObject": "@coalesce(first(body('Filter_User_ObjectMapping'))?['targetObjectName'], '')",
+                                                "sourceDirectoryName": "@coalesce(first(body('Filter_User_ObjectMapping'))?['sourceDirectoryName'], '')",
+                                                "targetDirectoryName": "@coalesce(first(body('Filter_User_ObjectMapping'))?['targetDirectoryName'], '')",
+                                                "mappingType": "@coalesce(items('ForEach_AttributeMappings')?['source']['type'], '')"
+                                            }
+                                        }
+                                    },
+                                    "ForEach_Source_Attribute": {
+                                        "foreach": "@if(equals(items('ForEach_AttributeMappings')?['source']?['type'], 'Attribute'), createArray(items('ForEach_AttributeMappings')?['source']?['name']), body('Select_Source_Attribute_Names'))",
+                                        "actions": {
+                                            "Append_Each_Source_Name": {
+                                                "type": "AppendToArrayVariable",
+                                                "inputs": {
+                                                    "name": "allSourceAttributeNames",
+                                                    "value": "@items('ForEach_Source_Attribute')"
+                                                }
+                                            }
+                                        },
+                                        "runAfter": {
+                                            "Append_Mapping": [
+                                                "Succeeded"
+                                            ]
+                                        },
+                                        "type": "Foreach"
+                                    }
+                                },
+                                "else": {
+                                    "actions": {}
+                                },
+                                "expression": {
+                                    "and": [
+                                        {
+                                            "not": {
+                                                "equals": [
+                                                    "@items('ForEach_AttributeMappings')?['targetAttributeName']",
+                                                    null
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "not": {
+                                                "equals": [
+                                                    "@items('ForEach_AttributeMappings')?['targetAttributeName']",
+                                                    ""
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                },
+                                "type": "If"
+                            }
+                        },
+                        "runAfter": {
+                            "Filter_User_ObjectMapping": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "Foreach"
+                    },
+                    "Select_Graph_Property_Names": {
+                        "runAfter": {
+                            "ForEach_AttributeMappings": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "Compose",
+                        "inputs": "@union(variables('allSourceAttributeNames'), json('[]'))"
+                    }
+                },
+                "runAfter": {
+                    "Initialize_AllSourceAttributeNames": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Scope"
             }
         },
         "outputs": {},
@@ -7483,6 +7547,7 @@
                     "Create_User_Test",
                     "Update_User_Test",
                     "Disable_User_Test",
+                    "Delete_User_Test",
                     "User_Update_Manager_Test",
                     "Create_Group_Test",
                     "Update_Group_Test",
@@ -7504,7 +7569,7 @@
                         "givenName": "User1 Given",
                         "surname": "User",
                         "jobTitle": "Software Engineer",
-                        "department": "Legal",
+                        "department": "Research",
                         "companyName": "Test Company",
                         "businessPhones": [
                             "+1-555-0100"
@@ -7574,7 +7639,7 @@
                         "givenName": "User3 Given",
                         "surname": "User",
                         "jobTitle": "Research Scientist",
-                        "department": "Legal",
+                        "department": "HumanResources",
                         "companyName": "Test Company",
                         "businessPhones": [
                             "+1-555-2001"
@@ -7593,7 +7658,7 @@
                         "usageLocation": "IN",
                         "hireDate": "2023-01-01T00:00:00Z",
                         "employeeOrgData": {
-                            "division": "Engineeering",
+                            "division": "Research",
                             "costCenter": "67463"
                         },
                         "userType": "Member",
@@ -7654,6 +7719,13 @@
                 "type": "Object",
                 "metadata": {
                     "description": "Default group properties for Microsoft Graph Group creation"
+                }
+            },
+            "LogicAppVersion": {
+                "defaultValue": "1.0.0",
+                "type": "String",
+                "metadata": {
+                    "description": "Version of the Logic App for tracking and deployment purposes"
                 }
             },
             "$connections": {
