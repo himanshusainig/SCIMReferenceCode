@@ -7722,7 +7722,7 @@
                 }
             },
             "LogicAppVersion": {
-                "defaultValue": "1.0.0",
+                "defaultValue": "3.0",
                 "type": "String",
                 "metadata": {
                     "description": "Version of the Logic App for tracking and deployment purposes"
