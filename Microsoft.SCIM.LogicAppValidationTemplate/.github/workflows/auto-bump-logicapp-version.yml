@@ -3,12 +3,12 @@ name: Auto-bump SCIM LogicApp Version and Tag
 on:
   pull_request:
     paths:
-      - 'Microsoft.SCIM.LogicAppValidationTemplate/logicAppTemplate.json'
+      - 'Microsoft.SCIM.LogicAppValidationTemplate/[deprecated]logicAppTemplate.json'
 
   push:
     branches: [master]
     paths:
-      - 'Microsoft.SCIM.LogicAppValidationTemplate/logicAppTemplate.json'
+      - 'Microsoft.SCIM.LogicAppValidationTemplate/[deprecated]logicAppTemplate.json'
 
 permissions:
   contents: write
@@ -31,7 +31,7 @@ jobs:
 
       - name: Check and auto-bump LogicAppVersion
         run: |
-          FILE="Microsoft.SCIM.LogicAppValidationTemplate/logicAppTemplate.json"
+          FILE="Microsoft.SCIM.LogicAppValidationTemplate/[deprecated]logicAppTemplate.json"
 
           # Get version from the PR branch
           CURRENT=$(jq -r '.parameters.LogicAppVersion.defaultValue' "$FILE")
@@ -83,7 +83,7 @@ jobs:
 
       - name: Create version tag
         run: |
-          FILE="Microsoft.SCIM.LogicAppValidationTemplate/logicAppTemplate.json"
+          FILE="Microsoft.SCIM.LogicAppValidationTemplate/[deprecated]logicAppTemplate.json"
           VERSION=$(jq -r '.parameters.LogicAppVersion.defaultValue' "$FILE")
           TAG_NAME="scim-logicapp-template-v${VERSION}"
 
