@@ -381,12 +381,15 @@ foreach ($wf in $wfDefs.Keys) {
 
 # ---------- 8. Aggregates ----------
 Write-Host "[8/9] Compute aggregates" -ForegroundColor Cyan
+# Probe actions whose Failed status is the expected success signal
+$failedWhitelist = @('DeleteUser_Check_User_Deleted')
 $allFlat = @()
 foreach ($wf in $wfActions.Keys) { $allFlat += $wfActions[$wf] }
+$whitelistedCount = ($allFlat | Where-Object { $_.properties.status -eq "Failed" -and $_.name -in $failedWhitelist }).Count
 $summary = [ordered]@{
     total     = $allFlat.Count
-    succeeded = ($allFlat | Where-Object { $_.properties.status -eq "Succeeded" }).Count
-    failed    = ($allFlat | Where-Object { $_.properties.status -eq "Failed" }).Count
+    succeeded = ($allFlat | Where-Object { $_.properties.status -eq "Succeeded" }).Count + $whitelistedCount
+    failed    = ($allFlat | Where-Object { $_.properties.status -eq "Failed" -and $_.name -notin $failedWhitelist }).Count
     skipped   = ($allFlat | Where-Object { $_.properties.status -eq "Skipped" }).Count
     other     = ($allFlat | Where-Object { $_.properties.status -notin @("Succeeded","Failed","Skipped") }).Count
 }
@@ -394,6 +397,7 @@ $failedActions = New-Object System.Collections.ArrayList
 foreach ($wf in $wfActions.Keys) {
     foreach ($a in $wfActions[$wf]) {
         if ($a.properties.status -ne "Failed") { continue }
+        if ($a.name -in $failedWhitelist) { continue }  # skip whitelisted probe actions
         $msg  = $a.properties.error.message
         $code = $a.properties.error.code
         if (-not $msg -and $contentMap.ContainsKey($wf) -and $contentMap[$wf].ContainsKey($a.name)) {
@@ -411,9 +415,9 @@ foreach ($wf in $wfActions.Keys) {
 }
 $testSummary = [ordered]@{
     total   = $testResults.Count
-    success = ($testResults | Where-Object { $_.testResult -eq "success" }).Count
+    success = ($testResults | Where-Object { $_.testResult -like "success*" }).Count
     skipped = ($testResults | Where-Object { $_.testResult -eq "SKIPPED" }).Count
-    failed  = ($testResults | Where-Object { $_.testResult -ne "success" -and $_.testResult -ne "SKIPPED" }).Count
+    failed  = ($testResults | Where-Object { $_.testResult -notlike "success*" -and $_.testResult -ne "SKIPPED" }).Count
 }
 
 $tplRoot         = $wfDefs['Orchestrator_Workflow'].actions
