@@ -180,9 +180,8 @@ methods:
 you can submit to Microsoft.
 
 Choose your preferred method: - **Method A** — Continue reading the
-sections below for manual step-by-step instructions - **Method B** —
-Jump to the section **“Alternative: Automated Setup Using the SCIM
-Onboarding Agent”** later in this document
+sections below for Agent-Automated setup - **Method B** — Jump to the
+section **“Manual Setup”** later in this document
 
 ------------------------------------------------------------------------
 
@@ -238,7 +237,7 @@ Before using the agent, ensure you have:
 
 ## Setup Instructions
 
-### Option A: Using Agent as orchestrator
+### Option A: Using Cline (VS Code Extension)
 
 #### Setting Up Your AI Agent
 
@@ -649,11 +648,30 @@ style="width:5.30614in;height:8.22103in" />
 <img src="./media/image21.png"
 style="width:6.5in;height:1.84583in" />
 
-10. Download all files from the **StandardLogicApp** folder of our GitHub repository: <https://github.com/AzureAD/SCIMReferenceCode/tree/master/Microsoft.SCIM.LogicAppValidationTemplate/StandardLogicApp> (the workflow JSON files — `Orchestrator_Workflow.json`, `Initialization_Workflow.json`, `UserTests_Workflow.json`, `GroupTests_Workflow.json`, `SCIMTests_Workflow.json` — plus `Orchestrator_Parameters.json` and `Deploy-LogicAppWorkflows.ps1`). Keep all the files in the same folder on your local machine.
+10. Download the **logicAppTemplate.json **file from
+    the** Microsoft.SCIM.LogicAppValidationTemplate** folder of our GitHub repository: <u>https://github.com/AzureAD/SCIMReferenceCode/tree/master/Microsoft.SCIM.LogicAppValidationTemplate</u> (copy/paste
+    this URL into your browser). *Note: The folder includes
+    a **README.md** file that lists out the various tests that the Logic
+    app will run. This may be helpful for your reference.*
 
-11. You may choose to use Azure CLI or PowerShell for the following steps.
+11. In the Logic app, select **Development Tools \> Logic app code
+    view**. Copy/paste the code from the template in the previous step
+    and click **Save**. The **Logic app designer** view should then
+    update with the various test cases that our template will
+    automatically run for you.
 
-12. Open Azure CLI, Select all the files and upload all the files to
+<img src="./media/image22.png"
+style="width:6.50278in;height:3.18082in" />
+
+12. You may choose to use Azure CLI or PowerShell for the following
+    steps. Download
+    [April20th](https://onedrive.cloud.microsoft/:f:/a@us63zt7y/r/_layouts/15/onedrive.aspx?id=%2Fa%40us63zt7y%2FDocuments%2FDeliverables%2FApril20th&share=cgrbcU2%5Fij9iT7QKJTpXdgnvEgUCKTigvk%5FywPwA2%2DinUJwnew).
+    Keep all the Files in the same folder.
+
+<img src="./media/image23.png"
+style="width:6.5in;height:2.57361in" />
+
+13. Open Azure CLI, Select all the files and upload all the files to
     Azure.
 
 <img src="./media/image24.png"
@@ -665,13 +683,13 @@ style="width:6.5158in;height:3.72207in" />
 <img src="./media/image26.png"
 style="width:6.5in;height:4.96111in" />
 
-13. Get the Subscription, ResourceGroup and LogicAppName from the
+14. Get the Subscription, ResourceGroup and LogicAppName from the
     Overview page.
 
 <img src="./media/image27.png"
 style="width:6.5in;height:2.60972in" />
 
-14. Run the following command
+15. Run the following command
 
 .\Deploy-LogicAppWorkflows.ps1 \`
 
@@ -695,7 +713,7 @@ style="width:6.5in;height:4.06458in" />
 <img src="./media/image31.png"
 style="width:6.5in;height:4.75208in" />
 
-15. Next, we will enable system-assigned managed identity for secure
+16. Next, we will enable system-assigned managed identity for secure
     resource access. Select **Settings \> Identity**.
 
 <img src="./media/image32.png"
@@ -704,27 +722,27 @@ style="width:6.5in;height:4.16806in" />
 <img src="./media/image33.png"
 style="width:6.5in;height:2.20347in" />
 
-16. Set the **Status** in the **System assigned** tab to **On**. Select
+17. Set the **Status** in the **System assigned** tab to **On**. Select
     **Yes** in the confirmation dialog that pops up.
 
 <img src="./media/image34.png"
 style="width:6.5in;height:2.86181in" />
 
-17. Select **Save**.
+18. Select **Save**.
 
 <img src="./media/image35.png"
 style="width:6.5in;height:3.02431in" />
 
-18. Take note of the object ID of the managed identity. You will need
+19. Take note of the object ID of the managed identity. You will need
     this object ID for the script that you will run in a few steps.
 
 <img src="./media/image36.png"
 style="width:6.5in;height:3.59792in" />
 
-19. Now let’s work on granting the owner role to the Logic app. Select
+20. Now let’s work on granting the owner role to the Logic app. Select
     **Azure role assignments**.
 
-20. In the **Azure role assignments** page, click on **Add role
+21. In the **Azure role assignments** page, click on **Add role
     assignment** and select the **Owner** role.
 
 <img src="./media/image37.png"
@@ -747,7 +765,7 @@ provisioning logs, etc.).
 
 You may choose to use Azure CLI or PowerShell for the following steps.
 
-21. Go to the sample script provided in the
+22. Go to the sample script provided in the
     [appendix](#script-for-assigning-permissions-to-your-logic-app) of
     this document. Copy the script for your records, and update the
     value of the **\$miObjId** field with the object ID of your Logic
@@ -756,7 +774,7 @@ You may choose to use Azure CLI or PowerShell for the following steps.
 <img src="./media/image41.png"
 style="width:6.5in;height:3.02708in" />
 
-22. Run the script using the command-line interface of your choice. If
+23. Run the script using the command-line interface of your choice. If
     using a UI like Azure Cloud Shell that provides you with an option
     to upload a file, you may opt to copy the script into a file, upload
     the file, then run the script.
@@ -829,13 +847,13 @@ style="width:6.5in;height:0.92083in" />
 
 ### Providing Values To Parameters
 
-23. The **servicePrincipalId** is the **objectId** of the non-gallery
+24. The **servicePrincipalId** is the **objectId** of the non-gallery
     SCIM app you created in the [previous section](#_Set_up_your).
 
 <img src="./media/image53.png"
 style="width:4.50063in;height:2.63578in" />
 
-24. Enter your SCIM endpoint.
+25. Enter your SCIM endpoint.
 
     1.  **Note**: don’t include feature flags like aadOptscim062020 in
         the scim endpoint here. Even if you have to configure your non
@@ -844,12 +862,12 @@ style="width:4.50063in;height:2.63578in" />
 <img src="./media/image54.png"
 style="width:4.52146in;height:2.71913in" />
 
-25. Enter your SCIM bearer token.
+26. Enter your SCIM bearer token.
 
 <img src="./media/image55.png"
 style="width:4.4277in;height:2.67746in" />
 
-26. Under **testUserDomain**, enter a verified domain that belongs to
+27. Under **testUserDomain**, enter a verified domain that belongs to
     your tenant. This domain will be used to create test users in Entra
     ID and provision them to your SCIM endpoint as part of the automated
     tests that the Logic app template will run. *Note: A Logic app
@@ -864,7 +882,7 @@ style="width:4.4277in;height:2.67746in" />
 <img src="./media/image56.png"
 style="width:4.57356in;height:2.6462in" />
 
-27. Under defaultUserProperties give the different sets of user
+28. Under defaultUserProperties give the different sets of user
     Properties values to test. The Logic App takes one choose one set of
     the defaultUserProperties to create User and another set for
     updating User. Selection is random based on no. of sets.
@@ -877,7 +895,7 @@ style="width:4.6875in;height:6.5in" />
 
 **  **
 
-28. **EnabledTests** can take one of the below values. We support
+29. **EnabledTests** can take one of the below values. We support
     running all tests in parallel, running individual tests, or running
     tests related to only users or only groups. ***Only one value should
     be provided.***
@@ -928,7 +946,7 @@ will be skipped
 <img src="./media/image59.png"
 style="width:4.4277in;height:2.54202in" />
 
-29. IsSoftDeleted can be ‘true’ or ‘false’. Set to true only if soft
+30. IsSoftDeleted can be ‘true’ or ‘false’. Set to true only if soft
     deletion is supported and defined in your SCIM schema. This property
     indicates that the user resource is marked for soft deletion—meaning
     it is flagged for removal but not permanently deleted.
@@ -939,29 +957,29 @@ style="width:4.4277in;height:2.54202in" />
 <img src="./media/image60.png"
 style="width:4.37561in;height:2.31282in" />
 
-30. Update scimClientId with client id.
+31. Update scimClientId with client id.
 
 <img src="./media/image61.png"
 style="width:4.49021in;height:2.52119in" />
 
-31. Update client secret
+32. Update client secret
 
 <img src="./media/image62.png"
 style="width:4.43812in;height:2.54202in" />
 
-32. Update ISV token endpoint
+33. Update ISV token endpoint
 
 <img src="./media/image63.png"
 style="width:4.40686in;height:2.71913in" />
 
 ## Run the Logic App
 
-33. You’re now ready to run the Logic app! Navigate to **WorkFlows\>**
+34. You’re now ready to run the Logic app! Navigate to **WorkFlows\>**
     Select **Orchestrtor_workflow**,
     <img src="./media/image64.png"
     style="width:6.5in;height:3.10139in" />
 
-34. From the Orchestartor_workflow’s designer, select “**Run**”
+35. From the Orchestartor_workflow’s designer, select “**Run**”
 
 <img src="./media/image65.png"
 style="width:6.5in;height:2.47153in" />
@@ -970,7 +988,7 @@ style="width:6.5in;height:2.47153in" />
 
 ## Verify the Runs
 
-35. You can view logs of your runs in the **Runs history** blade. When
+36. You can view logs of your runs in the **Runs history** blade. When
     clicking on an entry in **Runs history**, you check the final
     results of that entry, including the list of tests that were run,
     alongside status and any errors that may have come up.
@@ -980,7 +998,7 @@ style="width:6.5in;height:1.42639in" />
 
 ## Debugging
 
-36. Debugging Logic App:
+37. Debugging Logic App:
 
 Check the Final_TestResults action of the Orchestrator_workflow’s run to
 learn about the tests and their results.
@@ -1006,6 +1024,24 @@ inputs/outputs give further details about why that call is failed.
 Verify if the schema is valid and all the parameters are set according
 to the Schema. Fix the parameters or schema and run the logic app again.
 
+Note on SKIPPED tests: The following SKIPPED results are expected and
+correct, no action is needed. The Logic App automatically detects these
+capabilities during initialization and skips tests that do not apply.
+
+\(1\) User_Update_Manager_Test: Skipped when the manager attribute is
+not mapped in the target directory schema. Only applies if your app
+supports manager provisioning.
+
+\(2\) All Group tests (Create_Group_Test, Update_Group_Test,
+Delete_Group_Test, Group_Update_Add_Member_Test,
+Group_Update_Remove_Member_Test, POD_Group_Test, Restore_Group_Test) and
+SCIM Group tests (SCIM_Group_Create_Test, SCIM_Group_Update_Test,
+SCIM_Group_Pagination_Test): Skipped when the application does not
+support group provisioning.
+
+\(3\) Disable_User_Test: Skipped when IsSoftDeleted is set to false or
+soft-delete is not supported by the target application.
+
 “provisioningErrorDetails” gives the glimpse of Error information in
 case of failure.
 
@@ -1024,7 +1060,7 @@ style="width:6.5in;height:3.65625in" />
 
 ## Test Results
 
-37. Once you see the tests have passed and you are ready to move to
+38. Once you see the tests have passed and you are ready to move to
     onboarding. Provide the test results for us to validate and onboard.
 
 Run the Powershell validation script and provide us with the generated
@@ -1211,9 +1247,11 @@ Provide us the following information.
 
 # Understanding the Test Results
 
-The Logic App runs 13 tests: 5 User tests, 5 Group tests, and 3 SCIM
-compliance tests. This section explains how to find and read the
-results.
+### The Logic App runs 22 tests across three workflows: 7 User tests, 7 Group tests, and 8 SCIM compliance tests. "For detailed descriptions of each test and what they validate, see the SCIM Validation Test Overview: [SCIMReferenceCode/Microsoft.SCIM.LogicAppValidationTemplate/StandardLogicApp at master · AzureAD/SCIMReferenceCode · GitHub](https://github.com/AzureAD/SCIMReferenceCode/tree/master/Microsoft.SCIM.LogicAppValidationTemplate/StandardLogicApp)"
+
+### Not all tests will run for every application — the Logic App automatically detects what your app supports and skips tests that do not apply. 
+
+### This section explains how to find and read the results. 
 
 ### Where to Find the Results
 
@@ -1329,25 +1367,39 @@ automatically and tells you the root cause and fix.
 
 ### What “Passing” Means for Onboarding
 
-To proceed with gallery onboarding, **all applicable tests must pass**.
-The following are acceptable exceptions: - `Validate_Credentials_Test`
-failing when using a static bearer token (OAuth will be required for
-production) - `Schema_Discoverability_Test` showing a mismatch — prune
-the attribute mappings in the Entra portal to match your SCIM schema -
-Group tests being skipped if your application does not support group
-provisioning
+To proceed with gallery onboarding, all applicable tests must pass. The
+following are acceptable exceptions: -
+
+- Validate_Credentials_Test failing when using a static bearer token
+  (OAuth will be required for production).
+
+- Group tests being SKIPPED if your application does not support group
+  provisioning. This includes all 7 Group tests (Create_Group_Test,
+  Update_Group_Test, Delete_Group_Test, Group_Update_Add_Member_Test,
+  Group_Update_Remove_Member_Test, POD_Group_Test, Restore_Group_Test)
+  and 3 SCIM Group tests (SCIM_Group_Create_Test,
+  SCIM_Group_Update_Test, SCIM_Group_Pagination_Test).
+
+- User_Update_Manager_Test being SKIPPED when the manager attribute is
+  not present in the target directory schema. The Logic App checks
+  whether manager is mapped and automatically skips this test if it is
+  not.
+
+- Disable_User_Test being SKIPPED when IsSoftDeleted is set to false or
+  soft-delete is not supported. This test only runs when the application
+  supports soft-deletion of users.
 
 ## Automatic Failure Diagnosis
 
 If tests fail, the agent automatically:
 
 12. Fetches the `Final_TestResults` from the Orchestrator workflow
-12. Drills into child workflow actions to find the actual HTTP error
-13. Matches against known issue patterns
-14. For auto-fixable issues (e.g., missing permissions, schema
+13. Drills into child workflow actions to find the actual HTTP error
+14. Matches against known issue patterns
+15. For auto-fixable issues (e.g., missing permissions, schema
     validation errors, feature flags in endpoint), applies the fix and
     re-runs automatically
-15. For ISV-side issues (e.g., SCIM filter not supported, 404 on empty
+16. For ISV-side issues (e.g., SCIM filter not supported, 404 on empty
     queries), explains exactly what to fix
 
 ### Common Auto-Fixed Issues
@@ -1500,7 +1552,7 @@ pilot—your insights help us make Microsoft Entra ID better.
 
 [SCIMReferenceCode/Microsoft.SCIM.LogicAppValidationTemplate/AssignRolesTOManagedIdentity-LogicApps
 1.ps1 at master · AzureAD/SCIMReferenceCode ·
-GitHub](https://github.com/AzureAD/SCIMReferenceCode/blob/master/Microsoft.SCIM.LogicAppValidationTemplate/AssignRolesTOManagedIdentity-LogicApps.ps1)
+GitHub](https://github.com/AzureAD/SCIMReferenceCode/blob/master/Microsoft.SCIM.LogicAppValidationTemplate/AssignRolesTOManagedIdentity-LogicApps%201.ps1)
 
 ## Script for Logic App Validation
 
