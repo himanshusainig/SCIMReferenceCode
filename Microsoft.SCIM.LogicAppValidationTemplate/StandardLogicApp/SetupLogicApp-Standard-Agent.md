@@ -50,6 +50,13 @@ For your application to be eligible to onboard to the Microsoft Entra
 app gallery, your provisioning integration must meet the following
 requirements:
 
+- Submit the [SCIM Provisioning Testing Request Form for ISV
+  Developers](https://forms.microsoft.com/pages/responsepage.aspx?id=v4j5cvGGr0GRqy180BHbR3elR4YvzS1IhaP_XITThvJUODY1UTJSSUFXTzFYMTQ0SkxSWTY4OTYzRi4u&route=shorturl)
+  to allowlist your test tenant for the ISV Onboarding application.
+  After submitting, wait for confirmation from the Microsoft team that
+  your tenant has been approved before proceeding with any further
+  onboarding steps.
+
 - Support a SCIM 2.0 user or group endpoint (only one is required, but
   supporting both a user and group endpoint is recommended)
 
@@ -473,38 +480,40 @@ If you have no restrictions, say **“No restrictions”**.
 
 ## Pre-run: Setup
 
-### Set up your non-gallery SCIM app
+### Set up ISV Onboarding app
 
 As mentioned in the [Requirements section](#_Requirements), before you
-validate your provisioning integration, you must set up a non-gallery
-SCIM app with your desired configuration and start a successful sync
-with that app. This section describes how to do so.
+validate your provisioning integration, you must set up an ISV
+Onboarding app with your desired configuration and start a successful
+sync with that app. This section describes how to do so.
 
 ### Requirements
 
 In the [Onboarding requirements section](#onboarding-requirements),
 review the *Validation requirements* list to ensure that you have
-everything you need to set up a non-gallery SCIM app.
+everything you need to set up an ISV Onboarding app. You can get the
+more information about the ISV Onboarding App setup and its settings
+[ISVOnboarding Application
+Guide.docx](https://microsoft-my.sharepoint-df.com/:w:/p/mandals/cQqsmnl-L4-hQpSTZ3Ihb8m_EgUCsIR-RpsQX2Z8Od38R5X6hA?isSPOFile=1&ovuser=72f988bf-86f1-41af-91ab-2d7cd011db47%2Cv-vishnudesu%40microsoft.com&wdExp=TEAMS-TREATMENT&web=1&TeamsCID=0ec6323a-c049-49ba-b6f6-441b5925c34d&clickparams=eyJBcHBOYW1lIjoiVGVhbXMtRGVza3RvcCIsIkFwcFZlcnNpb24iOiI0OS8yNjA1MTQxNjcxMyJ9&linkOpenTime=1780692576945).
+Follow the steps below to get started.
 
 ### Instructions
 
 1.  Sign in to the Entra portal at
     [entra.microsoft.com](https://entra.microsoft.com).
 
-2.  Select **Enterprise applications \> New application \> Create your
-    own application**.
+2.  Select **Enterprise applications \> New application \> Search for
+    “Entra Gallery Provisioning Test App”**
 
 <img src="./media/image1.png"
 style="width:6.5in;height:1.85347in" />
 
 <img src="./media/image2.png"
-style="width:6.07743in;height:2.62448in" />
+style="width:6.51031in;height:1.47177in" />
 
-3.  Enter the name of your app, integration options, and click
-    **Create**.
-
-<img src="./media/image3.png"
-style="width:4.76548in;height:6.32658in" />
+3.  Enter the name of your app, and click
+    **Create**<img src="./media/image3.png"
+    style="width:5.71761in;height:6.89336in" />
 
 4.  Take note of the **Object ID** (this will be referred to as
     servicePrincipalID in the logic App).
@@ -512,16 +521,18 @@ style="width:4.76548in;height:6.32658in" />
 <img src="./media/image4.png"
 style="width:6.5in;height:5.90903in" />
 
-5.  Set **Provisioning Mode** to **Automatic**, enter your bearer token
-    details, and select **Test Connection**.
+5.  Set **Provisioning Mode,** Select “New Configuration”, enter your
+    OAuth Client Credentails details, and select **Test Connection**.
+
+6.  
 
 <img src="./media/image5.png"
-style="width:6.5in;height:3.82431in" />
+style="width:6.5in;height:1.93264in" />
 
 <img src="./media/image6.png"
-style="width:6.5in;height:2.1875in" />
+style="width:6.5in;height:2.95486in" />
 
-6.  Create a provisioning job by creating connection and set up schema
+7.  Create a provisioning job by creating connection and set up schema
     by navigating to **Provisioning \> Mappings \> Provision Users**.
     For more details on how to customize schema, you can check out our
     public documentation here: [Tutorial - Customize Microsoft Entra
@@ -553,14 +564,14 @@ style="width:6.5in;height:2.74097in" />
 <img src="./media/image11.png"
 style="width:6.5in;height:2.50694in" />
 
-7.  In the **Overview** page, select **Start Provisioning** to start a
+8.  In the **Overview** page, select **Start Provisioning** to start a
     provisioning job. If the provisioning job commences without errors,
     you are ready to move on to the next section.
 
 <img src="./media/image12.png"
 style="width:6.5in;height:3.36875in" />
 
-8.  **Optional:** Once you’ve successfully started a provisioning job,
+9.  **Optional:** Once you’ve successfully started a provisioning job,
     submit an allow list request for faster sync cycles via this form:
     [Allow List for Self-Service Validation of Provisioning Integration
     (Pilot) – Fill out
@@ -596,7 +607,7 @@ everything you need to set up a Logic app.
     should use the same tenant as the one where you set up your
     non-gallery SCIM app.
 
-2.  Use the searchbar to navigate to the **Subscriptions** blade.
+2.  Use the search bar to navigate to the **Subscriptions** blade.
 
 <img src="./media/image13.png" style="width:6.5in;height:1in" />
 
@@ -648,13 +659,16 @@ style="width:5.30614in;height:8.22103in" />
 <img src="./media/image21.png"
 style="width:6.5in;height:1.84583in" />
 
-10. Download the **logicAppTemplate.json **file from
+10. Select “Logic Apps” in the Entra Portal. Select the created Logic
+    app.
+
+11. Download the **logicAppTemplate.json **file from
     the** Microsoft.SCIM.LogicAppValidationTemplate** folder of our GitHub repository: <u>https://github.com/AzureAD/SCIMReferenceCode/tree/master/Microsoft.SCIM.LogicAppValidationTemplate</u> (copy/paste
     this URL into your browser). *Note: The folder includes
     a **README.md** file that lists out the various tests that the Logic
     app will run. This may be helpful for your reference.*
 
-11. In the Logic app, select **Development Tools \> Logic app code
+12. In the Logic app, select **Development Tools \> Logic app code
     view**. Copy/paste the code from the template in the previous step
     and click **Save**. The **Logic app designer** view should then
     update with the various test cases that our template will
@@ -663,15 +677,17 @@ style="width:6.5in;height:1.84583in" />
 <img src="./media/image22.png"
 style="width:6.50278in;height:3.18082in" />
 
-12. You may choose to use Azure CLI or PowerShell for the following
-    steps. Download
-    [April20th](https://onedrive.cloud.microsoft/:f:/a@us63zt7y/r/_layouts/15/onedrive.aspx?id=%2Fa%40us63zt7y%2FDocuments%2FDeliverables%2FApril20th&share=cgrbcU2%5Fij9iT7QKJTpXdgnvEgUCKTigvk%5FywPwA2%2DinUJwnew).
+13. You may choose to use Azure CLI or PowerShell for the following
+    steps. Download all the files from
+    [SCIMReferenceCode/Microsoft.SCIM.LogicAppValidationTemplate/StandardLogicApp
+    at master · AzureAD/SCIMReferenceCode ·
+    GitHub](https://github.com/AzureAD/SCIMReferenceCode/tree/master/Microsoft.SCIM.LogicAppValidationTemplate/StandardLogicApp).
     Keep all the Files in the same folder.
 
 <img src="./media/image23.png"
 style="width:6.5in;height:2.57361in" />
 
-13. Open Azure CLI, Select all the files and upload all the files to
+14. Open Azure CLI, Select all the files and upload all the files to
     Azure.
 
 <img src="./media/image24.png"
@@ -683,13 +699,13 @@ style="width:6.5158in;height:3.72207in" />
 <img src="./media/image26.png"
 style="width:6.5in;height:4.96111in" />
 
-14. Get the Subscription, ResourceGroup and LogicAppName from the
+15. Get the Subscription, ResourceGroup and LogicAppName from the
     Overview page.
 
 <img src="./media/image27.png"
 style="width:6.5in;height:2.60972in" />
 
-15. Run the following command
+16. Run the following command
 
 .\Deploy-LogicAppWorkflows.ps1 \`
 
@@ -713,7 +729,7 @@ style="width:6.5in;height:4.06458in" />
 <img src="./media/image31.png"
 style="width:6.5in;height:4.75208in" />
 
-16. Next, we will enable system-assigned managed identity for secure
+17. Next, we will enable system-assigned managed identity for secure
     resource access. Select **Settings \> Identity**.
 
 <img src="./media/image32.png"
@@ -722,27 +738,27 @@ style="width:6.5in;height:4.16806in" />
 <img src="./media/image33.png"
 style="width:6.5in;height:2.20347in" />
 
-17. Set the **Status** in the **System assigned** tab to **On**. Select
+18. Set the **Status** in the **System assigned** tab to **On**. Select
     **Yes** in the confirmation dialog that pops up.
 
 <img src="./media/image34.png"
 style="width:6.5in;height:2.86181in" />
 
-18. Select **Save**.
+19. Select **Save**.
 
 <img src="./media/image35.png"
 style="width:6.5in;height:3.02431in" />
 
-19. Take note of the object ID of the managed identity. You will need
+20. Take note of the object ID of the managed identity. You will need
     this object ID for the script that you will run in a few steps.
 
 <img src="./media/image36.png"
 style="width:6.5in;height:3.59792in" />
 
-20. Now let’s work on granting the owner role to the Logic app. Select
+21. Now let’s work on granting the owner role to the Logic app. Select
     **Azure role assignments**.
 
-21. In the **Azure role assignments** page, click on **Add role
+22. In the **Azure role assignments** page, click on **Add role
     assignment** and select the **Owner** role.
 
 <img src="./media/image37.png"
@@ -765,7 +781,7 @@ provisioning logs, etc.).
 
 You may choose to use Azure CLI or PowerShell for the following steps.
 
-22. Go to the sample script provided in the
+23. Go to the sample script provided in the
     [appendix](#script-for-assigning-permissions-to-your-logic-app) of
     this document. Copy the script for your records, and update the
     value of the **\$miObjId** field with the object ID of your Logic
@@ -774,7 +790,7 @@ You may choose to use Azure CLI or PowerShell for the following steps.
 <img src="./media/image41.png"
 style="width:6.5in;height:3.02708in" />
 
-23. Run the script using the command-line interface of your choice. If
+24. Run the script using the command-line interface of your choice. If
     using a UI like Azure Cloud Shell that provides you with an option
     to upload a file, you may opt to copy the script into a file, upload
     the file, then run the script.
@@ -847,13 +863,13 @@ style="width:6.5in;height:0.92083in" />
 
 ### Providing Values To Parameters
 
-24. The **servicePrincipalId** is the **objectId** of the non-gallery
-    SCIM app you created in the [previous section](#_Set_up_your).
+25. The **servicePrincipalId** is the **objectId** of the ISV onboarding
+    app you created in the [previous section](#_Set_up_your).
 
 <img src="./media/image53.png"
 style="width:4.50063in;height:2.63578in" />
 
-25. Enter your SCIM endpoint.
+26. Enter your SCIM endpoint.
 
     1.  **Note**: don’t include feature flags like aadOptscim062020 in
         the scim endpoint here. Even if you have to configure your non
@@ -862,12 +878,12 @@ style="width:4.50063in;height:2.63578in" />
 <img src="./media/image54.png"
 style="width:4.52146in;height:2.71913in" />
 
-26. Enter your SCIM bearer token.
+27. Enter your SCIM bearer token.
 
 <img src="./media/image55.png"
 style="width:4.4277in;height:2.67746in" />
 
-27. Under **testUserDomain**, enter a verified domain that belongs to
+28. Under **testUserDomain**, enter a verified domain that belongs to
     your tenant. This domain will be used to create test users in Entra
     ID and provision them to your SCIM endpoint as part of the automated
     tests that the Logic app template will run. *Note: A Logic app
@@ -882,7 +898,7 @@ style="width:4.4277in;height:2.67746in" />
 <img src="./media/image56.png"
 style="width:4.57356in;height:2.6462in" />
 
-28. Under defaultUserProperties give the different sets of user
+29. Under defaultUserProperties give the different sets of user
     Properties values to test. The Logic App takes one choose one set of
     the defaultUserProperties to create User and another set for
     updating User. Selection is random based on no. of sets.
@@ -895,7 +911,7 @@ style="width:4.6875in;height:6.5in" />
 
 **  **
 
-29. **EnabledTests** can take one of the below values. We support
+30. **EnabledTests** can take one of the below values. We support
     running all tests in parallel, running individual tests, or running
     tests related to only users or only groups. ***Only one value should
     be provided.***
@@ -946,7 +962,7 @@ will be skipped
 <img src="./media/image59.png"
 style="width:4.4277in;height:2.54202in" />
 
-30. IsSoftDeleted can be ‘true’ or ‘false’. Set to true only if soft
+31. IsSoftDeleted can be ‘true’ or ‘false’. Set to true only if soft
     deletion is supported and defined in your SCIM schema. This property
     indicates that the user resource is marked for soft deletion—meaning
     it is flagged for removal but not permanently deleted.
@@ -957,29 +973,29 @@ style="width:4.4277in;height:2.54202in" />
 <img src="./media/image60.png"
 style="width:4.37561in;height:2.31282in" />
 
-31. Update scimClientId with client id.
+32. Update scimClientId with client id.
 
 <img src="./media/image61.png"
 style="width:4.49021in;height:2.52119in" />
 
-32. Update client secret
+33. Update client secret
 
 <img src="./media/image62.png"
 style="width:4.43812in;height:2.54202in" />
 
-33. Update ISV token endpoint
+34. Update ISV token endpoint
 
 <img src="./media/image63.png"
 style="width:4.40686in;height:2.71913in" />
 
 ## Run the Logic App
 
-34. You’re now ready to run the Logic app! Navigate to **WorkFlows\>**
+35. You’re now ready to run the Logic app! Navigate to **WorkFlows\>**
     Select **Orchestrtor_workflow**,
     <img src="./media/image64.png"
     style="width:6.5in;height:3.10139in" />
 
-35. From the Orchestartor_workflow’s designer, select “**Run**”
+36. From the Orchestartor_workflow’s designer, select “**Run**”
 
 <img src="./media/image65.png"
 style="width:6.5in;height:2.47153in" />
@@ -988,7 +1004,7 @@ style="width:6.5in;height:2.47153in" />
 
 ## Verify the Runs
 
-36. You can view logs of your runs in the **Runs history** blade. When
+37. You can view logs of your runs in the **Runs history** blade. When
     clicking on an entry in **Runs history**, you check the final
     results of that entry, including the list of tests that were run,
     alongside status and any errors that may have come up.
@@ -998,7 +1014,7 @@ style="width:6.5in;height:1.42639in" />
 
 ## Debugging
 
-37. Debugging Logic App:
+38. Debugging Logic App:
 
 Check the Final_TestResults action of the Orchestrator_workflow’s run to
 learn about the tests and their results.
@@ -1060,7 +1076,7 @@ style="width:6.5in;height:3.65625in" />
 
 ## Test Results
 
-38. Once you see the tests have passed and you are ready to move to
+39. Once you see the tests have passed and you are ready to move to
     onboarding. Provide the test results for us to validate and onboard.
 
 Run the Powershell validation script and provide us with the generated
@@ -1247,7 +1263,7 @@ Provide us the following information.
 
 # Understanding the Test Results
 
-### The Logic App runs 22 tests across three workflows: 7 User tests, 7 Group tests, and 8 SCIM compliance tests. "For detailed descriptions of each test and what they validate, see the SCIM Validation Test Overview: [SCIMReferenceCode/Microsoft.SCIM.LogicAppValidationTemplate/StandardLogicApp at master · AzureAD/SCIMReferenceCode · GitHub](https://github.com/AzureAD/SCIMReferenceCode/tree/master/Microsoft.SCIM.LogicAppValidationTemplate/StandardLogicApp)"
+### The Logic App runs 23 tests across three workflows: 7 User tests, 7 Group tests, and 9 SCIM compliance tests. "For detailed descriptions of each test and what they validate, see the SCIM Validation Test Overview: [SCIMReferenceCode/Microsoft.SCIM.LogicAppValidationTemplate/StandardLogicApp at master · AzureAD/SCIMReferenceCode · GitHub](https://github.com/AzureAD/SCIMReferenceCode/tree/master/Microsoft.SCIM.LogicAppValidationTemplate/StandardLogicApp)"
 
 ### Not all tests will run for every application — the Logic App automatically detects what your app supports and skips tests that do not apply. 
 

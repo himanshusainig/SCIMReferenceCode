@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The SCIM Validation Logic App runs **22 automated tests** against an ISV's SCIM 2.0 endpoint to verify it is ready for publication in the Microsoft Entra app gallery. Tests cover the full provisioning lifecycle — user and group CRUD, attribute mappings, soft delete, provision-on-demand, direct SCIM compliance, and credential validation.
+The SCIM Validation Logic App runs **23 automated tests** against an ISV's SCIM 2.0 endpoint to verify it is ready for publication in the Microsoft Entra app gallery. Tests cover the full provisioning lifecycle — user and group CRUD, attribute mappings, soft delete, provision-on-demand, direct SCIM compliance, and credential validation.
 
 The Logic App is deployed as a Standard Azure Logic App with 5 workflows that execute in parallel, completing a full validation run in 30–60 minutes.
 
@@ -15,8 +15,8 @@ Orchestrator_Workflow (entry point)
  ├── Initialization_Workflow     — reads sync schema, builds dynamic test bodies
  ├── UserTests_Workflow          — 7 tests (parallel with Group/SCIM)
  ├── GroupTests_Workflow         — 7 tests (parallel with User/SCIM)
- └── SCIMTests_Workflow          — 8 tests (parallel with User/Group)
-      └── Final_TestResults      — aggregates 22 results, determines pass/fail
+ └── SCIMTests_Workflow          — 9 tests (parallel with User/Group)
+      └── Final_TestResults      — aggregates 23 results, determines pass/fail
 ```
 
 **Dynamic capability detection:** The Initialization workflow reads the provisioning schema and automatically determines which tests apply based on the ISV's attribute mappings:
@@ -59,7 +59,7 @@ Tests that don't apply are reported as **SKIPPED** (not failures).
 
 > **Note:** All 7 group tests are **skipped** if the ISV's schema does not have an enabled Group object mapping.
 
-### SCIM Compliance Tests (SCIMTests_Workflow) — 8 tests
+### SCIM Compliance Tests (SCIMTests_Workflow) — 9 tests
 
 | # | Test Name | What It Validates |
 |---|-----------|-------------------|
@@ -70,7 +70,8 @@ Tests that don't apply are reported as **SKIPPED** (not failures).
 | 19 | **SCIM_Group_Create_Test** | Directly calls `POST /Groups` with a SCIM group body. **Skipped** if groups are not supported. |
 | 20 | **SCIM_Group_Update_Test** | Directly calls `PATCH /Groups/{id}` with attribute updates. **Skipped** if groups are not supported. |
 | 21 | **SCIM_User_Pagination_Test** | Ensures ≥11 users exist on the endpoint (creates throwaway users from `initializationData.scimUserBody` if needed), then paginates `/Users?startIndex=N&count=5` across multiple pages. Verifies `startIndex`, `totalResults`, and page traversal. Cleans up created users afterward. |
-| 22 | **Validate_Credentials_Test** | Tests the OAuth 2.0 Client Credentials flow — acquires a token from the ISV's token endpoint using client ID/secret, then validates the SCIM connection. **Skipped** when `scimTokenEndpoint` is empty (static bearer token setup). |
+| 22 | **SCIM_Group_Pagination_Test** | Ensures ≥11 groups exist on the endpoint (creates throwaway groups from `initializationData.scimGroupBody` if needed), then paginates `/Groups?startIndex=N&count=5` across multiple pages. Verifies `startIndex`, `totalResults`, and page traversal. Cleans up created groups afterward. **Skipped** if groups are not supported. |
+| 23 | **Validate_Credentials_Test** | Tests the OAuth 2.0 Client Credentials flow — acquires a token from the ISV's token endpoint using client ID/secret, then validates the SCIM connection. **Skipped** when `scimTokenEndpoint` is empty (static bearer token setup). |
 
 ---
 
@@ -80,9 +81,9 @@ Tests that don't apply are reported as **SKIPPED** (not failures).
 |----------|-------|-----------|
 | **User Lifecycle** | 7 | Full CRUD + Manager + Restore + POD via Entra provisioning engine |
 | **Group Lifecycle** | 7 | Full CRUD + Membership + POD + Restore via Entra provisioning engine |
-| **SCIM Direct Compliance** | 7 | Direct HTTP calls to SCIM endpoint — schema, CRUD, null update, pagination |
+| **SCIM Direct Compliance** | 8 | Direct HTTP calls to SCIM endpoint — schema, CRUD, null update, user & group pagination |
 | **Credential Validation** | 1 | OAuth client credentials flow |
-| **Total Scored** | **22** |
+| **Total Scored** | **23** |
 
 ---
 
@@ -90,7 +91,7 @@ Tests that don't apply are reported as **SKIPPED** (not failures).
 
 | Scenario | Acceptable? |
 |----------|-------------|
-| All 22 tests: `success` | **Ready for gallery submission** |
+| All 23 tests: `success` | **Ready for gallery submission** |
 | Group tests: `SKIPPED` (no group mapping) | Acceptable if ISV only supports /Users |
 | Disable_User_Test: `SKIPPED` (no `active` mapping) | Acceptable — ISV should document |
 | Manager test: `SKIPPED` (no `manager` mapping) | Acceptable — ISV should document |
@@ -124,4 +125,4 @@ Both methods produce the same output: a `validation-result-<RunId>.json` file to
 
 ---
 
-*Document version: June 2026 — Covers Logic App validation template v4 with 22 tests across 5 workflows. Includes User Pagination, Restore tests, Schema_Discoverability_Test v2 with flatten loops, scimTargetUserValues, and Provision on Demand.*
+*Document version: June 2026 — Covers Logic App validation template v4 with 23 tests across 5 workflows. Includes User & Group Pagination, Restore tests, Schema_Discoverability_Test v2 with flatten loops, scimTargetUserValues, and Provision on Demand.*

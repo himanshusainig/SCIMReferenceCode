@@ -24,13 +24,14 @@
       "SCIM_Group_Update_Test",
       "SCIM_User_Delete_Test",
       "SCIM_Group_Delete_Test",
-      "SCIM_Pagination_Test",
+      "SCIM_User_Pagination_Test",
+      "SCIM_Group_Pagination_Test",
       "POD_User_Test",
       "POD_Group_Test",
       "Restore_User_Test"
     ],
     "type": "String",
-    "value": "SCIMTests"
+    "value": "All"
   },
   "IsSoftDeleted": {
     "metadata": {

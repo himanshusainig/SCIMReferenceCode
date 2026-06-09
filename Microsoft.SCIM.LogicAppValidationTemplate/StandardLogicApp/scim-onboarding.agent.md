@@ -37,7 +37,15 @@ Collect the ISV's SCIM endpoint and bearer token, validate their Azure environme
 
 ### Steps
 
-1. **Collect ALL inputs before proceeding** — use `ask_user` for each input. Do NOT skip any. Do NOT proceed to Step 2 until all inputs are collected.
+1. **Tenant whitelisting (prerequisite)** — Before proceeding with SCIM validation, the ISV must submit a tenant whitelisting request by completing the form at:
+
+   📄 **https://forms.microsoft.com/pages/responsepage.aspx?id=v4j5cvGGr0GRqy180BHbR3elR4YvzS1IhaP_XITThvJUODY1UTJSSUFXTzFYMTQ0SkxSWTY4OTYzRi4u&route=shorturl**
+
+   After submitting, the ISV must **wait for an explicit confirmation from the Microsoft team** that their tenant has been whitelisted. Do not attempt to continue with the onboarding steps until this confirmation is received — any Azure or Entra resource creation will fail if the tenant has not yet been approved.
+
+   Use `ask_user` to confirm the ISV has received whitelisting confirmation from Microsoft before proceeding. Do NOT continue to Step 2 until confirmed.
+
+2. **Collect ALL inputs before proceeding** — use `ask_user` for each input. Do NOT skip any. Do NOT proceed to Step 3 until all inputs are collected.
 
    Ask the ISV for each of the following, **one at a time**:
 
@@ -62,13 +70,13 @@ Collect the ISV's SCIM endpoint and bearer token, validate their Azure environme
 
    **You MUST ask these questions using `ask_user`. Do NOT assume values, do NOT skip OAuth questions, and do NOT proceed until the ISV has answered.**
 
-2. **Validate Azure CLI login**:
+3. **Validate Azure CLI login**:
    ```bash
    az account show
    ```
    If not logged in, instruct the ISV to run `az login`.
 
-3. **List and select Azure subscription**:
+4. **List and select Azure subscription**:
    ```bash
    az account list --query "[].{id:id, name:name, isDefault:isDefault}" -o table
    ```
@@ -77,14 +85,14 @@ Collect the ISV's SCIM endpoint and bearer token, validate their Azure environme
    az account set --subscription "<subscriptionId>"
    ```
 
-4. **Validate Graph API access and get tenant info**:
+5. **Validate Graph API access and get tenant info**:
    ```bash
    az rest --method GET --url "https://graph.microsoft.com/v1.0/me" --query "{name:displayName,upn:userPrincipalName}"
    az rest --method GET --url "https://graph.microsoft.com/v1.0/organization" --query "value[0].verifiedDomains[].name"
    ```
    Note the verified domains — the first `*.onmicrosoft.com` domain will be used as `testUserDomain`.
 
-5. **Probe the SCIM endpoint**:
+6. **Probe the SCIM endpoint**:
 
    > **IMPORTANT (Windows/PowerShell):** SCIM servers return `Content-Type: application/scim+json` which PowerShell's `Invoke-WebRequest` does NOT auto-decode as text — it returns a **byte array**. You MUST use `Invoke-RestMethod` (which auto-decodes) or decode manually with `[System.Text.Encoding]::UTF8.GetString($response.RawContentStream.ToArray())`. Do NOT save raw `$response.Content` to a file — it will be integer bytes, not JSON.
 
@@ -105,7 +113,7 @@ Collect the ISV's SCIM endpoint and bearer token, validate their Azure environme
    - `supportsSoftDelete`: `active` attribute in User schema
    - `emptyFilterCompliant`: empty filter returns 200 with `totalResults: 0`
 
-6. **Analyze bearer token** — if it's a JWT, decode the payload (base64) and check `exp` claim:
+7. **Analyze bearer token** — if it's a JWT, decode the payload (base64) and check `exp` claim:
    ```bash
    echo "<token>" | cut -d. -f2 | base64 -d 2>/dev/null | python3 -c "import sys,json; t=json.load(sys.stdin); print(t.get('exp','not a JWT'))"
    ```
@@ -150,6 +158,19 @@ az rest --method POST \
   --url "https://graph.microsoft.com/v1.0/applicationTemplates/2e388773-2016-40c0-a06e-743486cef3bf/instantiate" \
   --body '{"displayName":"<appName>"}'
 ```
+
+**If the instantiate call fails with 403 Forbidden or 400 Bad Request** (e.g., `"Application template 2e388773-... is not available"` or `"Access denied"`), the ISV's tenant is **not whitelisted** for the ISVOnboarding application.
+
+> ⚠️ **STOP — do NOT proceed with any further steps.** Inform the ISV:
+>
+> *Your tenant is not whitelisted for the ISVOnboarding application. Submit a whitelisting request by completing the form at:*
+>
+> 📄 **https://forms.microsoft.com/pages/responsepage.aspx?id=v4j5cvGGr0GRqy180BHbR3elR4YvzS1IhaP_XITThvJUODY1UTJSSUFXTzFYMTQ0SkxSWTY4OTYzRi4u&route=shorturl**
+>
+> *After submitting, wait for an explicit confirmation from the Microsoft team that your tenant has been whitelisted. Do not attempt to continue until you receive this confirmation. Once confirmed, restart the agent from the beginning.*
+
+**If the instantiate call succeeds (HTTP 200/201):**
+
 Extract from response:
 - `servicePrincipal.id` → this is the **servicePrincipalId** (used everywhere)
 - `application.appId` → the application ID
@@ -160,62 +181,61 @@ Extract from response:
 
 > **Scope of this step.** This step configures what **Entra's sync engine** uses when it calls SCIM (including provisionOnDemand / POD tests). It is independent of the Logic App test workflows. The Logic App tests **always** call SCIM directly using `scimEndpoint` + `scimBearerToken` from `Orchestrator_Parameters.json` (set in Phase 4) — they never go through Entra.
 >
-> **ALWAYS use the static bearer token (`SecretToken`) for the Entra sync secrets — even if the ISV also provided OAuth credentials.** OAuth round-trip issues (token endpoint issues tokens that the SCIM server's bearer middleware rejects) cause provisionOnDemand to silently fail, breaking POD tests. Bearer token auth is reliable and exercises the same SCIM endpoints.
+> **`scimBearerToken` is ALWAYS required** — the LA workflows use it for all 22 direct SCIM HTTP calls. If the ISV did not provide a bearer token at all, the Logic App tests cannot run — abort and ask for one.
 >
-> If the ISV provided OAuth credentials, record them in `parameters.json` (Phase 4) so the Logic App's `Validate_Credentials_Test` can exercise the OAuth flow separately — but the Entra sync engine itself always uses the bearer token.
+> **NEVER mix** bearer + OAuth keys in the same PUT `/synchronization/secrets` call — Graph returns 500 and silently drops the entire payload.
 
-This step has 3 sub-steps:
+> Always pass the body via a file (`--body '@file.json'`). Inline JSON gets corrupted on Windows pwsh.
 
-```
-1. POST validateCredentials with bearer token (inline creds)
-2. POST validateCredentials with bearer token (useSavedCredentials — verifies both paths)
-3. PUT /synchronization/secrets with BaseAddress + SecretToken only
-4. POST /synchronization/jobs with {"templateId":"isvonboarding"}
-```
+**Determine the branch** based on what the ISV provided in Phase 1:
 
-> **Always pass the body via a file (`--body '@file.json'`).** Inline JSON gets corrupted on Windows pwsh.
-> **Send ONLY `BaseAddress` + `SecretToken`.** Mixing bearer with OAuth keys (e.g. sending `SecretToken` alongside `Oauth2ClientId`) causes Graph to return 500 and silently drop the entire payload, quarantining the job on first run.
+| ISV provided | Branch | Entra sync uses | PUT secrets with |
+|---|---|---|---|
+| Bearer only | A | Bearer | `BaseAddress` + `SecretToken` |
+| Bearer + OAuth | B | OAuth | `BaseAddress` + `Oauth2ClientId` + `Oauth2ClientSecret` + `Oauth2TokenExchangeUri` |
 
-Credentials payload (always these 2 keys):
+---
 
-```
-BaseAddress             = <scimEndpoint>
-SecretToken             = <scimBearerToken>
-```
+**Sub-step 2b-1: validateCredentials (bearer — ALWAYS run this)**
 
-**Sub-step 2b-1: validateCredentials (inline credentials)**
-
-Write the credentials to `validate_creds.json`, then POST with `templateId`:
+Write the bearer credentials to `validate_creds_bearer.json`, then POST:
 
 ```bash
-# validate_creds.json:
+# validate_creds_bearer.json:
 # {"templateId":"isvonboarding","useSavedCredentials":false,"credentials":[
 #   {"key":"BaseAddress","value":"<scimEndpoint>"},
-#   {"key":"SecretToken","value":"<scimBearerToken>"}
+#   {"key":"SecretToken","value":"<bearerToken>"}
 # ]}
 az rest --method POST \
   --url "https://graph.microsoft.com/v1.0/servicePrincipals/<servicePrincipalId>/synchronization/jobs/validateCredentials" \
   --headers "Content-Type=application/json" \
-  --body '@validate_creds.json'
+  --body '@validate_creds_bearer.json'
 ```
 
 **Classify the response, then act:**
 
 | Response | What it means | Action |
 |---|---|---|
-| HTTP 200/204 (empty body) | Graph reached the ISV's SCIM endpoint with the bearer token and got a successful test response | Proceed to sub-step 2b-2 |
+| HTTP 200/204 (empty body) | Graph reached the ISV's SCIM endpoint with the bearer token and got a successful test response | Proceed |
 | HTTP 500 `InternalError` — `"Requested value 'X' was not found"` | Spec bug — wrong key name in the credentials payload | Abort. Fix the key name. |
-| HTTP 400 `CredentialValidationUnavailable` | Graph contacted the ISV's SCIM server and got an error back (401, 403, 5xx, etc.). Bearer token may be wrong or expired. | Surface the inner error verbatim to the ISV. ABORT and wait for the ISV to provide a valid bearer token. |
-| HTTP 400 `RequestMissingRequiredParameter` | Body is missing `templateId` or `credentials` array | Fix the body shape. Pre-job URL requires `templateId`; post-job URL does not. |
+| HTTP 400 `CredentialValidationUnavailable` | Graph contacted the ISV's SCIM server and got an error back (401, 403, 5xx, etc.). Bearer token may be wrong or expired. | Surface the inner error verbatim to the ISV. ABORT. |
+| HTTP 400 `RequestMissingRequiredParameter` | Body is missing `templateId` or `credentials` array | Fix the body shape. |
 | Any other 4xx/5xx | Unexpected | Surface verbatim and abort. |
 
 **Sub-step 2b-2: PUT the credentials into `/synchronization/secrets`**
 
+> **IMPORTANT (PUT secrets — both branches):** Every PUT to `/synchronization/secrets` **MUST** include `SyncNotificationSettings` and `SyncAll` keys alongside the auth-specific keys. Without them, Graph silently drops the entire payload — no error is returned, but no secrets are persisted. The subsequent `useSavedCredentials: true` validation then fails because there are no saved credentials.
+>
+> This matches what the Entra portal sends (observable in Developer Tools → Network tab on the "Test Connection" button). The portal always includes these keys.
+
+**Branch A (bearer only):**
 ```bash
 # secrets.json:
 # {"value":[
+#   {"key":"SyncNotificationSettings","value":"{\"Enabled\":false,\"DeleteThresholdEnabled\":true,\"DeleteThresholdValue\":500}"},
+#   {"key":"SyncAll","value":"false"},
 #   {"key":"BaseAddress","value":"<scimEndpoint>"},
-#   {"key":"SecretToken","value":"<scimBearerToken>"}
+#   {"key":"SecretToken","value":"<bearerToken>"}
 # ]}
 az rest --method PUT \
   --url "https://graph.microsoft.com/v1.0/servicePrincipals/<servicePrincipalId>/synchronization/secrets" \
@@ -223,8 +243,29 @@ az rest --method PUT \
   --body '@secrets.json'
 ```
 
-Then validate saved credentials work too:
+**Branch B (OAuth — ISV provided OAuth creds):**
+```bash
+# secrets.json:
+# {"value":[
+#   {"key":"SyncNotificationSettings","value":"{\"Enabled\":false,\"DeleteThresholdEnabled\":true,\"DeleteThresholdValue\":500}"},
+#   {"key":"SyncAll","value":"false"},
+#   {"key":"AuthenticationType","value":"OAuth2ClientCredentialsGrant"},
+#   {"key":"BaseAddress","value":"<scimEndpoint>"},
+#   {"key":"Oauth2ClientId","value":"<clientId>"},
+#   {"key":"Oauth2ClientSecret","value":"<clientSecret>"},
+#   {"key":"Oauth2TokenExchangeUri","value":"<tokenEndpoint>"}
+# ]}
+az rest --method PUT \
+  --url "https://graph.microsoft.com/v1.0/servicePrincipals/<servicePrincipalId>/synchronization/secrets" \
+  --headers "Content-Type=application/json" \
+  --body '@secrets.json'
+```
 
+> Note: `AuthenticationType=OAuth2ClientCredentialsGrant` is required for OAuth — without it, Graph won't attempt OAuth token acquisition from the stored creds.
+>
+> Inline `validateCredentials` with OAuth keys (i.e. `useSavedCredentials: false` + credentials array including OAuth keys) **works** — this is exactly what the Entra portal does. Earlier advice to avoid inline OAuth validation was incorrect; the real issue was missing `SyncNotificationSettings`/`SyncAll` in the PUT payload.
+
+Then validate saved credentials work (both branches) — **this is the Test Connection**:
 ```bash
 # validate_saved.json:
 # {"templateId":"isvonboarding","useSavedCredentials":true}
@@ -234,7 +275,16 @@ az rest --method POST \
   --body '@validate_saved.json'
 ```
 
-Both inline AND saved-credential validateCredentials must pass before proceeding.
+**Classify the saved-credential validation response — do NOT proceed until this passes:**
+
+| Response | What it means | Action |
+|---|---|---|
+| HTTP 200/204 (empty body) | Test Connection succeeded — Entra can reach the ISV's SCIM endpoint using the saved credentials | Proceed to 2b-3 |
+| HTTP 400 `CredentialValidationUnavailable` | **Branch A:** bearer token rejected by the ISV's SCIM server (401/403/5xx). **Branch B:** OAuth token exchange failed — wrong client ID, wrong client secret, bad token endpoint URL, scope issue, or the ISV's token endpoint issued a token that their SCIM server rejected. | Surface the inner error verbatim to the ISV. **ABORT.** Do NOT create the sync job — it will immediately quarantine. Wait for the ISV to provide corrected credentials, then re-PUT secrets and re-validate. |
+| HTTP 500 `InternalError` — `"Requested value 'X' was not found"` | Secrets payload was silently rejected — wrong key names or mixed bearer + OAuth keys in the same PUT | Re-PUT secrets with the correct keys for the branch, **always including `SyncNotificationSettings` and `SyncAll`** (Branch A: + `BaseAddress` + `SecretToken`; Branch B: + `AuthenticationType` + `BaseAddress` + `Oauth2ClientId` + `Oauth2ClientSecret` + `Oauth2TokenExchangeUri`). Then re-validate. |
+| Any other 4xx/5xx | Unexpected | Surface verbatim and **ABORT**. |
+
+> ⚠️ **GATE: Do NOT proceed to Sub-step 2b-3 until the saved-credential Test Connection returns 200/204.** Creating a sync job with invalid credentials causes immediate quarantine, and recovering from quarantine requires a full restart cycle (re-PUT secrets → restart job with `resetScope: Full` → start → re-verify). It is far cheaper to fix credentials now.
 
 **Sub-step 2b-3: Create the sync job**
 ```bash
@@ -244,11 +294,53 @@ az rest --method POST \
 ```
 Extract the `jobId` from the response.
 
+**Sub-step 2b-4: Verify tenant whitelist**
+
+The sync job response includes `synchronizationJobSettings` with a `tenantWhitelist` entry — a JSON array of tenant IDs that are authorized to use the ISVOnboarding provisioning features (schema, sync execution, provisionOnDemand). Check if the ISV's tenant is in the list:
+
+```python
+import json
+whitelist_str = '<tenantWhitelist value from synchronizationJobSettings>'
+whitelist = json.loads(whitelist_str)
+isv_tenant = '<tenantId from az rest .../organization>'
+if isv_tenant not in whitelist:
+    print(f"BLOCKED: Tenant {isv_tenant} is not in the whitelist.")
+else:
+    print("Tenant is whitelisted — proceed.")
+```
+
+**If the ISV's tenant is NOT in the whitelist:**
+
+> ⚠️ **STOP — do NOT proceed with any further steps (do NOT create the Logic App, storage account, or permissions).** Inform the ISV:
+>
+> *Your tenant is not whitelisted for the ISVOnboarding provisioning application. Provisioning schema, sync execution, and test operations will fail with 401 Unauthorized until your tenant is whitelisted. Submit a whitelisting request by completing the form at:*
+>
+> 📄 **https://forms.microsoft.com/pages/responsepage.aspx?id=v4j5cvGGr0GRqy180BHbR3elR4YvzS1IhaP_XITThvJUODY1UTJSSUFXTzFYMTQ0SkxSWTY4OTYzRi4u&route=shorturl**
+>
+> *After submitting, wait for an explicit confirmation from the Microsoft team that your tenant has been whitelisted. Do not attempt to continue until you receive this confirmation. The Entra app and sync job have been left in place. Once confirmed, restart the agent — it will detect the existing resources and continue from where it left off.*
+
+**If the ISV's tenant IS in the whitelist** → proceed normally.
+
 **Do NOT start the provisioning job yet** — the ISV must review attribute mappings first (Phase 3).
 
 **Hand-off to Phase 4 (do this when you reach Phase 4, not now):**
-- If the ISV provided OAuth credentials: copy `scimClientId`, `scimClientSecret`, `scimTokenEndpoint`, `scimOAuthScope` into `parameters.json` so `Validate_Credentials_Test` can exercise the OAuth path from the Logic App. These are **separate** from the Entra sync engine's bearer-only credentials.
-- If the ISV provided only a bearer token: leave those 4 OAuth keys as empty strings in `parameters.json`.
+
+| Parameter | Branch A (bearer only) | Branch B (bearer + OAuth) |
+|---|---|---|
+| `scimEndpoint` | `<scimEndpoint>` | `<scimEndpoint>` |
+| `scimBearerToken` | `<bearerToken>` | `<bearerToken>` (always needed — LA uses it directly) |
+| `scimClientId` | `""` | `<clientId>` |
+| `scimClientSecret` | `""` | `<clientSecret>` |
+| `scimTokenEndpoint` | `""` | `<tokenEndpoint>` |
+| `scimOAuthScope` | `""` | `<scope>` |
+
+**Test behavior differences:**
+
+| Test | Branch A | Branch B |
+|---|---|---|
+| 22 SCIM tests | Use `scimBearerToken` ✓ | Use `scimBearerToken` ✓ |
+| `Validate_Credentials_Test` | **SKIPPED** (empty tokenEndpoint) | **RUNS** (exercises OAuth) |
+| POD / sync engine | Uses bearer from stored secrets | Uses OAuth from stored secrets |
 
 #### Step 2c: Create resource group (if needed)
 ```bash
@@ -764,8 +856,8 @@ Update these parameters in the JSON:
 | Parameter | Value | Source |
 |-----------|-------|--------|
 | `servicePrincipalId` | `<servicePrincipal.id from Step 2a instantiate response>` | **Entra enterprise app SP id — NOT the Logic App MI objectId.** Both are GUIDs; swapping them silently breaks every Graph call against `/servicePrincipals/<id>/...` with a 404. |
-| `scimEndpoint` | `<ISV's endpoint from Phase 1 Step 1a>` | **MANDATORY.** The Logic App tests call this URL directly. Strip any `aadOptscim062020` feature flags. |
-| `scimBearerToken` | `<ISV's bearer token from Phase 1 Step 1b>` | **MANDATORY.** Used by both the Logic App tests (direct SCIM calls) AND by the Entra sync engine (via `SecretToken` in Step 2b). If the ISV did not provide one, abort and request it. |
+| `scimEndpoint` | `<ISV's endpoint from Phase 1 Step 2a>` | **MANDATORY.** The Logic App tests call this URL directly. Strip any `aadOptscim062020` feature flags. |
+| `scimBearerToken` | `<ISV's bearer token from Phase 1 Step 2b>` | **MANDATORY.** Used by both the Logic App tests (direct SCIM calls) AND by the Entra sync engine (via `SecretToken` in Step 2b). If the ISV did not provide one, abort and request it. |
 | `testUserDomain` | `<first *.onmicrosoft.com domain>` | Auto from Phase 1 |
 | `EnabledTests` | `All` | Auto — **MANDATORY: always overwrite to `All`. Do NOT preserve any existing value from the current `parameters.json`.** |
 | `IsSoftDeleted` | `true` if `active` attribute detected | Auto from Phase 1 |
@@ -1087,7 +1179,7 @@ Follow this process for **every** failed test in `Final_TestResults`:
 `Final_TestResults` includes `childWorkflowRunLinks` — a map of workflow name → portal URL. Extract the `runId` from the URL path parameter. Match the failed test to its workflow:
 - `Create_User_Test`, `Update_User_Test`, `Delete_User_Test`, `Disable_User_Test`, `User_Update_Manager_Test`, `Restore_User_Test`, `POD_User_Test` → **UserTests_Workflow**
 - `Create_Group_Test`, `Update_Group_Test`, `Delete_Group_Test`, `Group_Update_Add_Member_Test`, `Group_Update_Remove_Member_Test`, `POD_Group_Test`, `Restore_Group_Test` → **GroupTests_Workflow**
-- `Schema_Discoverability_Test`, `SCIM_Null_Update_Test`, `SCIM_User_Create_Test`, `SCIM_User_Update_Test`, `SCIM_Group_Create_Test`, `SCIM_Group_Update_Test`, `SCIM_User_Pagination_Test`, `Validate_Credentials_Test` → **SCIMTests_Workflow**
+- `Schema_Discoverability_Test`, `SCIM_Null_Update_Test`, `SCIM_User_Create_Test`, `SCIM_User_Update_Test`, `SCIM_Group_Create_Test`, `SCIM_Group_Update_Test`, `SCIM_User_Pagination_Test`, `SCIM_Group_Pagination_Test`, `Validate_Credentials_Test` → **SCIMTests_Workflow**
 
 #### 2. List all executed actions in the child workflow
 
@@ -1381,7 +1473,7 @@ Write the result to `allActionsDetailed[<WorkflowName>] = <tree>`.
 
 #### Step 7i: Fetch and redact parameters
 
-Read `Orchestrator_Parameters.json` (or the run's workflow version parameters). Redact:
+Fetch the run's **workflow version parameters** (preferred) — the Orchestrator run object contains `properties.workflow.name` (the version ID); call `GET .../workflows/Orchestrator_Workflow/versions/<versionName>` and read `properties.parameters`. This captures the exact parameter values that were active when the run started, even if someone updated the Logic App parameters afterward. Fall back to the local `Orchestrator_Parameters.json` file only if the version API is unavailable. Redact:
 
 - `scimBearerToken` → `"***"`
 - Any field name matching `*token*`, `*secret*`, `*credential*`, `*password*`, `*key*` → `"***"`

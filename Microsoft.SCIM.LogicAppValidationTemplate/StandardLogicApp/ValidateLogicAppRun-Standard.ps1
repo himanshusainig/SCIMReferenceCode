@@ -436,8 +436,26 @@ $missing = @($tplActionNames | Where-Object { $n=$_; -not ($orchActionsList | Wh
 # ---------- 9. Parameters (redacted) + write report ----------
 Write-Host "[9/9] Parameters + emit report" -ForegroundColor Cyan
 $params = $null
-if ($ParametersFile -and (Test-Path $ParametersFile)) {
+
+# Prefer the run-time parameters from the workflow version that was active
+# during this run, rather than the current live parameters or a local file.
+$versionName = $run.properties.workflow.name
+if ($versionName) {
+    try {
+        $verObj = Invoke-Mgmt "/workflows/Orchestrator_Workflow/versions/$versionName"
+        $raw = $verObj.properties.parameters
+        Write-Host "    Parameters source: workflow version $versionName (run-time snapshot)"
+    } catch {
+        Write-Host "    !! Failed to fetch workflow version $versionName : $_" -ForegroundColor Yellow
+        $raw = $null
+    }
+}
+# Fallback to local file if version fetch failed or unavailable
+if (-not $raw -and $ParametersFile -and (Test-Path $ParametersFile)) {
     $raw = Get-Content $ParametersFile -Raw | ConvertFrom-Json
+    Write-Host "    Parameters source: local file $ParametersFile (fallback)"
+}
+if ($raw) {
     $r = [ordered]@{}
     foreach ($p in $raw.PSObject.Properties) {
         $v = $p.Value.value
