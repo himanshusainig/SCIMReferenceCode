@@ -341,16 +341,16 @@ If you have **GitHub Copilot** with agent mode enabled:
 
 #### Step 1: Set Up
 
-1.  Ensure GitHub Copilot and Copilot Chat are installed in VS Code
-2.  Place the `scim-onboarding.agent.md` file in your project folder
-3.  Open the folder in VS Code
+- Ensure GitHub Copilot and Copilot Chat are installed in VS Code
+- Place the `scim-onboarding.agent.md` file in your project folder
+- Open the folder in VS Code
 
 #### Step 2: Run
 
-4.  Open **Copilot Chat** (Ctrl+Shift+I or click the Copilot icon)
-5.  Switch to **Agent mode** (click the mode selector at the top of the
-    chat panel)
-6.  Reference the agent file and start:
+- Open **Copilot Chat** (Ctrl+Shift+I or click the Copilot icon)
+- Switch to **Agent mode** (click the mode selector at the top of the
+  chat panel)
+- Reference the agent file and start:
 
 <!-- -->
 
@@ -1074,193 +1074,6 @@ can query for a specific stage / action on the magnifying glass icon.
 <img src="./media/image71.png"
 style="width:6.5in;height:3.65625in" />
 
-## Test Results
-
-39. Once you see the tests have passed and you are ready to move to
-    onboarding. Provide the test results for us to validate and onboard.
-
-Run the Powershell validation script and provide us with the generated
-JSON file.
-
-> **Prerequisites**
-
-- **PowerShell Version 7.0+**: Install
-  from [https://aka.ms/powershell](vscode-file://vscode-app/c:/Users/v-mchittoory/AppData/Local/Programs/Microsoft%20VS%20Code/resources/app/out/vs/code/electron-browser/workbench/workbench.html) or
-  PowerShell 5.1 with \`-SkipActionDetails\` flag
-
-- **Azure Role** - Reader or Logic App Operator on the Logic App
-  resource
-
-- **Azure CLI** - Install from <https://aka.ms/installazurecli>
-
-> **Note:** The script uses Azure CLI internally to obtain access tokens
-> for Azure Resource Management (ARM) API calls.
->
-> **31.1 Login to Azure**
->
-> Open PowerShell and run:
->
-> az login
->
-> \# Set the subscription you want to use
->
-> az account set --subscription "YOUR_SUBSCRIPTION_ID"
->
-> **31.2 Run the Validation Script**
->
-> Download the Validation script provided in the appendix.
->
-> Navigate to the script directory and run:
->
-> .\ValidateLogicAppRun-Standard.ps1 \`
->
->     -SubscriptionId "YOUR_SUBSCRIPTION_ID" \`
->
->     -ResourceGroup "YOUR_RESOURCE_GROUP" \`
->
->     -LogicAppName "YOUR_LOGIC_APP_NAME" \`
->
->     -RunId "YOUR_RUN_ID"
->
-> **Where to find these values:**
-
-- Subscription ID: Azure Portal → Subscriptions → Your Subscription →
-  Copy the ID
-
-- Resource Group / Logic App Name: Azure Portal → Your Logic App →
-  Overview
-
-- Run ID: Azure Portal → Your Logic App → Run History → Copy the Run ID
-
-> **Optional Parameters:**
->
-> -SkipActionDetails: Skip fetching action inputs/outputs (faster
-> execution, works with PowerShell 5.1)
->
-> **Note:** If copy-pasting the command, verify that hyphens (-) before
-> parameters are correct, as some applications replace them with
-> different dash characters.
->
-> **Example**
->
-> .\ValidateLogicAppRun-Standard.ps1 \`
->
->     -SubscriptionId "12345678-1234-1234-1234-123456789012" \`
->
->     -ResourceGroup "rg-provisioning-prod" \`
->
->     -LogicAppName "la-scim-validator" \`
->
->     -RunId "08584361051946613703020273411CU28"
->
-> **31.3 Submit Results**
->
-> Send us the generated JSON file:
-> <span class="mark">validation-result-{RunId}.json</span>
->
-> The script displays **VALIDATION PASSED** (green) or **VALIDATION
-> FAILED** (red) in the console upon completion.
->
-> **What Gets Validated**
-
-- Run completed successfully
-
-- No failed actions
-
-- All required provisioning stages executed (dynamically extracted from
-  template)
-
-- All template actions executed (no modifications)
-
-> **Troubleshooting the Validation Script**
-
-<table style="width:92%;">
-<colgroup>
-<col style="width: 45%" />
-<col style="width: 46%" />
-</colgroup>
-<thead>
-<tr>
-<th>Issue</th>
-<th>Solution</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>"Authentication failed"</td>
-<td>Run az login and sign in again</td>
-</tr>
-<tr>
-<td>"Cannot access Logic App"</td>
-<td><p>Verify subscription ID, resource group, and Logic App name.</p>
-<p>Check you have proper Azure permissions.</p></td>
-</tr>
-<tr>
-<td>"No subscriptions found"</td>
-<td>Wait 5-10 minutes after role assignment, then run az account
-clear and az login</td>
-</tr>
-<tr>
-<td>Script execution policy error</td>
-<td>Run: <mark>Set-ExecutionPolicy RemoteSigned -Scope
-CurrentUser</mark></td>
-</tr>
-<tr>
-<td>"This script requires PowerShell 7.0 or later for parallel
-processing."</td>
-<td>Install PowerShell 7+ or run
-with <mark>-SkipActionDetails</mark> flag</td>
-</tr>
-</tbody>
-</table>
-
-> **Understanding Results**
-
-- **VALIDATION PASSED** - Run succeeded with valid template
-
-- **VALIDATION FAILED** - Check the JSON report for:
-
-<!-- -->
-
-- **validationErrors** - High-level issues
-
-- **failedActions** - Specific errors with details
-
-- **templateValidation.requiredStages** - Stage execution status
-
-- **actionComparison** - Missing or modified actions detected
-
-When we release the full self-service onboarding experience for
-provisioning integrations, you will provide us with a **Run ID**
-associated with a successful run of your Logic app (alongside details
-such as the subscription and resource group that your Logic app is
-associated with). Run IDs will be valid for a finite number of days,
-during which we will review your submission and work on deploying your
-provisioning integration to the Microsoft Entra app gallery. You will be
-given access to this experience when it releases to Private Preview in
-CY2026.
-
-## Next Steps after successful run
-
-Provide us the following information.
-
-1.  Generated Logic App test results as described in [Test
-    Results](#_Test_Results) section.
-
-2.  \[Required only if your run was done on Logic app template published
-    before 02/09\] Export Pruned Schema as mentioned in Logic App setup
-    instructions or as mentioned in [Export Application Provisioning
-    configuration and roll back to a known good state for disaster
-    recovery in Microsoft Entra ID - Microsoft Entra ID \| Microsoft
-    Learn](https://learn.microsoft.com/en-us/entra/identity/app-provisioning/export-import-provisioning-configuration#export-your-provisioning-configuration)
-
-3.  Since this is a pilot, we would like to run the tests ourselves as a
-    sanity check. This step will not be required once we build an
-    end-to-end experience. For this, we will need the SCIM endpoint and
-    a long-lived bearer token. Please also let us know if there are any
-    constraints (for example, a required domain for the
-    userPrincipalName)
-
 # Understanding the Test Results
 
 ### The Logic App runs 23 tests across three workflows: 7 User tests, 7 Group tests, and 9 SCIM compliance tests. "For detailed descriptions of each test and what they validate, see the SCIM Validation Test Overview: [SCIMReferenceCode/Microsoft.SCIM.LogicAppValidationTemplate/StandardLogicApp at master · AzureAD/SCIMReferenceCode · GitHub](https://github.com/AzureAD/SCIMReferenceCode/tree/master/Microsoft.SCIM.LogicAppValidationTemplate/StandardLogicApp)"
@@ -1367,16 +1180,16 @@ permission to the managed identity and re-run
 
 ### How to Debug a Failed Test
 
-7.  **Read** `provisioningErrorDetails` in the results JSON — this
-    usually tells you the root cause (HTTP status code + error message)
-8.  **Click the** `runLink` — this opens the child workflow run in the
-    Azure portal
-9.  **Search for the failed action name** (from `testResult`) in the
-    workflow designer
-10. **Click the failed action** → check **Inputs** (what was sent) and
-    **Outputs** (what came back)
-11. The HTTP response body in the outputs contains the exact error from
-    the Graph API or your SCIM endpoint
+- **Read** `provisioningErrorDetails` in the results JSON — this usually
+  tells you the root cause (HTTP status code + error message)
+- **Click the** `runLink` — this opens the child workflow run in the
+  Azure portal
+- **Search for the failed action name** (from `testResult`) in the
+  workflow designer
+- **Click the failed action** → check **Inputs** (what was sent) and
+  **Outputs** (what came back)
+- The HTTP response body in the outputs contains the exact error from
+  the Graph API or your SCIM endpoint
 
 **If using the agent (Method A):** The agent does steps 1–5
 automatically and tells you the root cause and fix.
@@ -1409,14 +1222,14 @@ following are acceptable exceptions: -
 
 If tests fail, the agent automatically:
 
-12. Fetches the `Final_TestResults` from the Orchestrator workflow
-13. Drills into child workflow actions to find the actual HTTP error
-14. Matches against known issue patterns
-15. For auto-fixable issues (e.g., missing permissions, schema
-    validation errors, feature flags in endpoint), applies the fix and
-    re-runs automatically
-16. For ISV-side issues (e.g., SCIM filter not supported, 404 on empty
-    queries), explains exactly what to fix
+- Fetches the `Final_TestResults` from the Orchestrator workflow
+- Drills into child workflow actions to find the actual HTTP error
+- Matches against known issue patterns
+- For auto-fixable issues (e.g., missing permissions, schema validation
+  errors, feature flags in endpoint), applies the fix and re-runs
+  automatically
+- For ISV-side issues (e.g., SCIM filter not supported, 404 on empty
+  queries), explains exactly what to fix
 
 ### Common Auto-Fixed Issues
 
@@ -1438,6 +1251,161 @@ If tests fail, the agent automatically:
 | Rate limiting (429) | Support ≥25 req/s |
 
 ------------------------------------------------------------------------
+
+## 
+
+# Submit test results 
+
+Once you have completed the validation process and passed 100% of all
+tests, you can now submit your validation
+results. This step is required, whether you used the agent-automated or
+manual method to validate your provisioning integration. 
+
+You will submit results via the **private preview developer blade** for
+ISV self-service onboarding in the Entra admin portal. Once
+you submit the results, the Microsoft team will have access to your
+validation tests, as well as your application details. 
+
+## What happens next? 
+
+During private preview, once we receive your validation results, the
+Microsoft team will work with you to deploy your application to the
+Microsoft Entra app gallery.  
+
+When our publisher experience is released during public preview, the
+deployment process will be automated. When the validation results
+are submitted through the developer blade, those results will be matched
+with the corresponding submission request in the publisher experience,
+and the application will be automatically deployed to the Microsoft
+Entra app gallery in preview mode. 
+
+## Requirements 
+
+To view the developer blade in the non-gallery application, your tenant
+will have to be allow listed for private preview. Your tenant should
+have been allow listed as part of the [intake
+process](bookmark://_Step_1:_Enroll). 
+
+## Instructions 
+
+Here’s how to find the developer blade and submit validation results: 
+
+10. Sign in to the Entra portal
+    at [entra.microsoft.com](https://entra.microsoft.com/). 
+
+11. Paste the following URL into your
+    browser: [https://entra.microsoft.com/?Microsoft_AAD_Connect_Provisioning=tip&feature.enableSelfServiceOnboardingDeveloperPortal=true&feature.consoletelemetry=true#view/Microsoft_AAD_IAM/StartboardApplicationsMenuBlade/~/AppAppsPreview](https://entra.microsoft.com/?Microsoft_AAD_Connect_Provisioning=tip&feature.enableSelfServiceOnboardingDeveloperPortal=true&feature.consoletelemetry=true%23view/Microsoft_AAD_IAM/StartboardApplicationsMenuBlade/~/AppAppsPreview).
+    Once your tenant is allow listed, this URL will
+    allow your allow listed tenant to view the private preview developer
+    blade. 
+
+12. Select **Enterprise applications \> All applications**. Select the
+    non-gallery application that either (a) the AI-powered agent created
+    if you used the [agent-automated
+    method](bookmark://_Method_A:_Agent-Automated) of creating
+    and validating a non-gallery application, or (b) you created
+    yourself if you followed the [manual set-up
+    method](bookmark://_Method_B:_Manual). 
+
+13. Navigate to **Provisioning \> Submit validation results**, and click
+    on the **Submit validation results** button in the command bar. 
+
+<img src="./media/image78.png"
+style="width:6.5in;height:1.46944in" /> 
+
+You will be directed to a form where you will submit the details of the
+Logic App that was used for validation (depending on the set-up method
+you followed, this Logic App may have been created automatically by our
+agent or by you). 
+
+14. Under the Validation results tab: 
+
+<!-- -->
+
+1.  Input the [request ID you received from the Microsoft
+    team](bookmark://_Step_1:_Enroll) after you submitted your intake
+    request in the **Submission request ID** field. *Note: This is a
+    placeholder request ID that we generated for the purpose of Private
+    Preview. Once we release the publisher experience, you would input
+    the ID of the submission request initialized by your organization.
+    This ID allows us to map the developer validation results to the
+    correct submission request.* 
+
+2.  Select **Yes** for the question in the **Run a Logic App** section. 
+
+3.  Input the subscription, resource group, and name of the Logic App
+    used to validate your provisioning integration. 
+
+4.  Input the run ID in the **Run ID **field. *Note: The Run ID must be
+    associated with a run of the Logic App template where 100% of test
+    cases pass. If you are having trouble finding the Run ID, read [this
+    section](bookmark://_How_do_I).* 
+
+<img src="./media/image79.png"
+style="width:6.5in;height:5.03056in" /> 
+
+<img src="./media/image80.png"
+style="width:6.35417in;height:3.52083in" /> 
+
+15. Under the **Preview **tab, review the application details that we
+    extracted from your validation results. Verify that all application
+    details, including attribute mappings and job settings, are correct
+    before proceeding. *Note: You will not be able to edit the form
+    after submission.* 
+
+16. Under the **Attestations** tab, confirm that you meet all
+    requirements listed and select **Yes** for all required
+    fields. *Note: You will not be able to proceed if there are any
+    questions where you do not respond **Yes**. These attestations all
+    relate to security requirements that we are not able to check
+    programmatically using the Logic App template.* 
+
+17. Under the **Review + submit** tab, click **Submit**. 
+
+Once you have gotten to this point, congratulations! You have completed
+the required steps to self-service validate that your application is
+ready to onboard to the Microsoft Entra app gallery, and you have made
+sure that your results are accessible to the Microsoft team. At this
+point, please **contact the Microsoft team** to let us know
+that you’ve completed all the steps listed in this guide, and we will
+work with you to deploy your application to the gallery. 
+
+## How do I find the Run ID? 
+
+Having trouble finding a Logic App Run ID that is associated with a run
+where 100% of test cases passed? Here’s how you can find it. 
+
+1.  Sign in to the Azure portal
+    at [portal.azure.com](https://portal.azure.com/). 
+
+2.  Type “logic app” into the search bar and click on **Logic apps**. 
+
+3.  Once you’re in the **Logic apps** blade, click on the Logic App that
+    was created by either the agent or you when you were validating your
+    provisioning integration. 
+
+4.  Navigate to **Workflows \> Orchestrator_Workflow**. 
+
+<img src="./media/image81.png"
+style="width:6.5in;height:2.60833in" /> 
+
+5.  Select **Run history**. 
+
+6.  Identify your latest run where the status is listed
+    as **Succeeded**. Click on the copy icon to copy the value listed in
+    the **Identifier** column. *Note: You can verify that the run passed
+    100% of test cases by clicking on the hyperlinked ID. This will take
+    you to the designer view of the **Orchestrator_Workflow**, where you
+    can scroll to the bottom to check the **Final_TestResults** stage.
+    If the **Final_TestResults** stage completed with no errors, the
+    run passed all validation tests.* 
+
+Congratulations, you just found the Run ID associated with a successful
+run of your Logic App! This is the Run ID you’ll use
+when submitting validation results through the [developer
+blade](bookmark://_Instructions). <img src="./media/image82.png"
+style="width:6.5in;height:3.14653in" /> <img src="./media/image83.png"
+style="width:6.5in;height:2.81528in" />
 
 # Frequently Asked Questions: 
 
